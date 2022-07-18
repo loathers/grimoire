@@ -26,6 +26,16 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
   return result;
 }
 
+export function addExplicitAfter(tasks: Task[]): Task[] {
+  let lastImplicit;
+  for (const task of tasks) {
+    if (task.after !== undefined) continue;
+    if (lastImplicit !== undefined) task.after = [lastImplicit];
+    lastImplicit = task.name;
+  }
+  return tasks;
+}
+
 export function orderByRoute<T extends Task = Task>(
   tasks: T[],
   routing: string[],
