@@ -27,11 +27,10 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
 }
 
 export function addExplicitAfter(tasks: Task[]): Task[] {
-  let lastImplicit;
+  let prev;
   for (const task of tasks) {
-    if (task.after !== undefined) continue;
-    if (lastImplicit !== undefined) task.after = [lastImplicit];
-    lastImplicit = task.name;
+    if (prev !== undefined && task.after === undefined) task.after = [prev];
+    prev = task.name;
   }
   return tasks;
 }
