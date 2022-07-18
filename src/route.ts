@@ -6,7 +6,7 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
     for (const task of quest.tasks) {
       // Include quest name in task names and dependencies (unless dependency quest is given)
       task.name = `${quest.name}/${task.name}`;
-      task.after = task.after.map((after) =>
+      task.after = task.after?.map((after) =>
         after.includes("/") ? after : `${quest.name}/${after}`
       );
       result.push(task);
@@ -17,7 +17,7 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
   const names = new Set<string>();
   for (const task of result) names.add(task.name);
   for (const task of result) {
-    for (const after of task.after) {
+    for (const after of task.after ?? []) {
       if (!names.has(after)) {
         throw `Unknown task dependency ${after} of ${task.name}`;
       }
@@ -26,7 +26,11 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
   return result;
 }
 
-export function orderByRoute<T extends Task = Task>(tasks: T[], routing: string[], ignore_missing_tasks?: boolean): Task[] {
+export function orderByRoute<T extends Task = Task>(
+  tasks: T[],
+  routing: string[],
+  ignore_missing_tasks?: boolean
+): Task[] {
   const priorities = new Map<string, [number, Task]>();
   for (const task of tasks) {
     priorities.set(task.name, [1000, task]);
@@ -42,7 +46,7 @@ export function orderByRoute<T extends Task = Task>(tasks: T[], routing: string[
     if (old_priority[0] <= priority) return;
     priorities.set(task, [priority, old_priority[1]]);
 
-    for (const requirement of old_priority[1].after) {
+    for (const requirement of old_priority[1].after ?? []) {
       setPriorityRecursive(requirement, priority - 0.01);
     }
   }
