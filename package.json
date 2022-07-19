@@ -1,5 +1,5 @@
 {
-  "name": "grimoire",
+  "name": "@pstalcup/grimoire",
   "version": "0.1.0",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
