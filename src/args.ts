@@ -240,8 +240,9 @@ export class Args {
       const settingText =
         arg.setting === ""
           ? ""
-          : `<font color='#888888'>[setting: ${arg.setting ?? `${scriptName}_${arg.key ?? k}`
-          }]</font>`;
+          : `<font color='#888888'>[setting: ${
+              arg.setting ?? `${scriptName}_${arg.key ?? k}`
+            }]</font>`;
 
       printHtml(
         `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`
@@ -314,8 +315,8 @@ type ArgMap = {
 };
 type ParsedArgs<T extends ArgMap> = {
   [k in keyof T]: T[k] extends Arg<unknown>
-  ? Exclude<ReturnType<T[k]["parser"]>, undefined>
-  : ReturnType<T[k]["parser"]>;
+    ? Exclude<ReturnType<T[k]["parser"]>, undefined>
+    : ReturnType<T[k]["parser"]>;
 } & ArgMetadata<T>;
 
 /**
