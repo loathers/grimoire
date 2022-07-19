@@ -1,6 +1,6 @@
 import { Quest, Task } from "./task";
 
-export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
+export function getTasks<T extends Task = Task>(quests: Quest<T>[], implicitAfter = false): T[] {
   const result: T[] = [];
   for (const quest of quests) {
     for (const task of quest.tasks) {
@@ -9,6 +9,9 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
       task.after = task.after?.map((after) =>
         after.includes("/") ? after : `${quest.name}/${after}`
       );
+      // Include previous task as a dependency
+      const prev = result.at(-1);
+      if (implicitAfter && task.after === undefined && prev !== undefined) task.after = [prev.name];
       result.push(task);
     }
   }
@@ -24,15 +27,6 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[]): T[] {
     }
   }
   return result;
-}
-
-export function addExplicitAfter(tasks: Task[]): Task[] {
-  let prev;
-  for (const task of tasks) {
-    if (prev !== undefined && task.after === undefined) task.after = [prev];
-    prev = task.name;
-  }
-  return tasks;
 }
 
 export function orderByRoute<T extends Task = Task>(
