@@ -1,7 +1,6 @@
 import { Monster } from "kolmafia";
 import { Macro } from "libram";
 
-
 export type DelayedMacro = Macro | (() => Macro);
 function undelay(macro: DelayedMacro): Macro {
   if (macro instanceof Macro) return macro;
@@ -59,10 +58,7 @@ export class CombatStrategy {
     result.step(monster_macros.build());
 
     // Perform the non-monster specific macro
-    if (this.default_macro)
-      result.step(
-        new Macro().step(...this.default_macro.map(undelay))
-      );
+    if (this.default_macro) result.step(new Macro().step(...this.default_macro.map(undelay)));
     return result;
   }
 }
@@ -80,15 +76,11 @@ export class CompressedMacro {
   }
 
   public build(): Macro {
-    let result = new Macro();
+    const result = new Macro();
     this.components.forEach((monsters, macro) => {
       const condition = monsters.map((mon) => `monsterid ${mon.id}`).join(" || ");
-      result = result.if_(condition, macro);
+      result.if_(condition, macro);
     });
     return result;
   }
 }
-
-
-
-
