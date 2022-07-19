@@ -1,11 +1,27 @@
 import { Task } from "./task";
 import { get, PropertiesManager } from "libram";
-import { adv1, buy, choiceFollowsFight, equippedAmount, inMultiFight, itemAmount, Location, retrieveItem, runChoice, runCombat } from "kolmafia";
+import {
+  adv1,
+  buy,
+  choiceFollowsFight,
+  equippedAmount,
+  inMultiFight,
+  itemAmount,
+  Location,
+  retrieveItem,
+  runChoice,
+  runCombat,
+} from "kolmafia";
 import { Outfit } from "./outfit";
 import { CombatStrategy } from "./combat";
 
+export type EngineOptions = {
+  recoveryCallback?: () => void;
+};
+
 export class Engine<T extends Task = Task> {
   tasks: T[];
+  options: EngineOptions;
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
@@ -14,11 +30,12 @@ export class Engine<T extends Task = Task> {
    * Create the engine.
    * @param tasks A list of tasks for looking up task dependencies.
    */
-  constructor(tasks: T[]) {
+  constructor(tasks: T[], options: EngineOptions = {}) {
     this.tasks = tasks;
     for (const task of tasks) {
       this.tasks_by_name.set(task.name, task);
     }
+    this.options = options;
     this.initPropertiesManager(this.propertyManager);
   }
 
@@ -136,6 +153,7 @@ export class Engine<T extends Task = Task> {
    */
   prepare(task: T): void {
     task.prepare?.();
+    this.options.recoveryCallback?.();
   }
 
   /**
@@ -241,10 +259,10 @@ export class Engine<T extends Task = Task> {
       autoGarish: true,
       allowNonMoodBurning: false,
       allowSummonBurning: true,
-      libramSkillsSoftcore: "none"
+      libramSkillsSoftcore: "none",
     });
   }
-};
+}
 
 export const wanderingNCs = new Set<string>([
   "Wooof! Wooooooof!",
