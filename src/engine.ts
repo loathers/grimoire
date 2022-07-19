@@ -1,6 +1,18 @@
 import { Task } from "./task";
 import { get, PropertiesManager } from "libram";
-import { adv1, buy, choiceFollowsFight, equippedAmount, inMultiFight, itemAmount, Location, retrieveItem, runChoice, runCombat } from "kolmafia";
+import {
+  adv1,
+  buy,
+  choiceFollowsFight,
+  equippedAmount,
+  inMultiFight,
+  itemAmount,
+  Location,
+  retrieveItem,
+  runChoice,
+  runCombat,
+  toSlot,
+} from "kolmafia";
 import { Outfit } from "./outfit";
 import { CombatStrategy } from "./combat";
 
@@ -98,7 +110,9 @@ export class Engine<T extends Task = Task> {
   createOutfit(task: T): Outfit {
     const spec = typeof task.outfit === "function" ? task.outfit() : task.outfit;
     const outfit = new Outfit();
-    for (const item of spec?.equip ?? []) outfit.equip(item);
+    for (const [slotName, itemOrItems] of Object.entries(spec?.equip ?? {})) {
+      outfit.equip(itemOrItems, toSlot(slotName));
+    }
     if (spec?.familiar) outfit.equip(spec.familiar);
     outfit.avoid = spec?.avoid;
     outfit.skipDefaults = spec?.skipDefaults ?? false;
@@ -241,10 +255,10 @@ export class Engine<T extends Task = Task> {
       autoGarish: true,
       allowNonMoodBurning: false,
       allowSummonBurning: true,
-      libramSkillsSoftcore: "none"
+      libramSkillsSoftcore: "none",
     });
   }
-};
+}
 
 export const wanderingNCs = new Set<string>([
   "Wooof! Wooooooof!",
