@@ -24,7 +24,7 @@ export type AcquireItem = {
 
 export type Task = {
   name: string;
-  after: string[];
+  after?: string[];
 
   ready?: () => boolean;
   completed: () => boolean;
