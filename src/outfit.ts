@@ -6,14 +6,13 @@ import {
   Familiar,
   Item,
   Slot,
+  toSlot,
   useFamiliar,
   weaponHands,
 } from "kolmafia";
-import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
+import { $familiar, $item, $skill, $slot, $slots, get, have, Requirement } from "libram";
 
 export class Outfit {
-  static ACCESSORY_SLOTS = $slots`acc1, acc2, acc3`;
-
   equips: Map<Slot, Item> = new Map<Slot, Item>();
   accesories: Item[] = [];
   skipDefaults = false;
@@ -21,25 +20,64 @@ export class Outfit {
   modifier?: string;
   avoid?: Item[];
 
-  equip(thing?: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
-    if (thing === undefined) return true;
-    if (Array.isArray(thing)) return thing.some((val) => this.equip(val, slot));
-    if (!this.canEquip(thing, slot)) return false;
+  equip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
+    if (item === undefined) return true;
+    if (Array.isArray(item)) return item.every((val) => this.equip(val));
+    if (!have(item)) return false;
+    if (item instanceof Item && !canEquip(item)) return false;
+    if (this.avoid && this.avoid.find((i) => i === item) !== undefined) return false;
 
-    if (thing instanceof Item) {
-      if (slot === undefined) throw `A slot must be specified`;
-      if (Outfit.ACCESSORY_SLOTS.includes(slot)) {
-        this.accesories.push(thing);
-      } else {
-        this.equips.set(slot, thing);
+    if (item instanceof Item) {
+      const slot = toSlot(item);
+      if (slot === $slot`acc1`) {
+        if (this.accesories.length >= 3) return false;
+        this.accesories.push(item);
+        return true;
       }
+      if (slot === $slot`off-hand`) {
+        const weapon = this.equips.get($slot`weapon`);
+        if (weapon && weaponHands(weapon) === 2) return false;
+      }
+      if (!this.equips.has(slot)) {
+        this.equips.set(slot, item);
+        return true;
+      }
+      if (
+        slot === $slot`weapon` &&
+        !this.equips.has($slot`off-hand`) &&
+        have($skill`Double-Fisted Skull Smashing`) &&
+        weaponHands(item)
+      ) {
+        this.equips.set($slot`off-hand`, item);
+        return true;
+      }
+      if (
+        slot === $slot`off-hand` &&
+        have($familiar`Left-Hand Man`) &&
+        this.familiar === undefined &&
+        !this.equips.has($slot`familiar`)
+      ) {
+        // eslint-disable-next-line libram/verify-constants
+        if (item === $item`cursed magnifying glass` && !canChargeVoid()) {
+          // Cursed magnifying glass cannot trigger in Lefty
+          this.equips.set($slot`familiar`, this.equips.get($slot`off-hand`) ?? $item`none`);
+          this.equips.set($slot`off-hand`, item);
+        } else {
+          this.familiar = $familiar`Left-Hand Man`;
+          this.equips.set($slot`familiar`, item);
+        }
+        return true;
+      }
+      return false;
     } else {
-      this.familiar = thing;
+      if (this.familiar && this.familiar !== item) return false;
+      if (!have(item)) return false;
+      this.familiar = item;
+      return true;
     }
-    return true;
   }
 
-  canEquip(item?: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
+  canEquip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
     if (item === undefined) return true;
     if (Array.isArray(item)) return item.every((val) => this.canEquip(val)); // TODO: smarter
     if (!have(item)) return false;
@@ -47,8 +85,8 @@ export class Outfit {
     if (this.avoid && this.avoid.find((i) => i === item) !== undefined) return false;
 
     if (item instanceof Item) {
-      if (slot === undefined) throw `A slot must be specified`;
-      if (Outfit.ACCESSORY_SLOTS.includes(slot)) {
+      const slot = toSlot(item);
+      if (slot === $slot`acc1`) {
         if (this.accesories.length >= 3) return false;
         return true;
       }
@@ -114,7 +152,7 @@ export class Outfit {
       if (
         currentEquip === $item`none` ||
         equippedAmount(currentEquip) >
-          accessoryEquips.filter((accessory) => accessory === currentEquip).length
+        accessoryEquips.filter((accessory) => accessory === currentEquip).length
       ) {
         equip(slot, toEquip);
       }
@@ -153,4 +191,8 @@ export class Outfit {
       }
     }
   }
+}
+
+function canChargeVoid(): boolean {
+  return get("_voidFreeFights") < 5 && get("cursedMagnifyingGlassCount") < 13;
 }

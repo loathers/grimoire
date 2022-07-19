@@ -6,20 +6,8 @@ export type Quest<T extends Task = Task> = {
   tasks: T[];
 };
 
-export type OutfitSlot =
-  | "hat"
-  | "back"
-  | "weapon"
-  | "offhand"
-  | "shirt"
-  | "pants"
-  | "acc1"
-  | "acc2"
-  | "acc3"
-  | "familiar";
-
 export interface OutfitSpec {
-  equip?: Partial<{ [slot in OutfitSlot]: Item | Item[] }>; // Items to be equipped in specific slots
+  equip?: Item[]; // Items to be equipped in any slot
   modifier?: string; // Modifier to maximize
   familiar?: Familiar; // Familiar to use
   avoid?: Item[]; // Items that cause issues and so should not be equipped
