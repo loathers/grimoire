@@ -1,6 +1,17 @@
 import { Task } from "./task";
 import { get, PropertiesManager } from "libram";
-import { adv1, buy, choiceFollowsFight, equippedAmount, inMultiFight, itemAmount, Location, retrieveItem, runChoice, runCombat } from "kolmafia";
+import {
+  adv1,
+  buy,
+  choiceFollowsFight,
+  equippedAmount,
+  inMultiFight,
+  itemAmount,
+  Location,
+  retrieveItem,
+  runChoice,
+  runCombat,
+} from "kolmafia";
 import { Outfit } from "./outfit";
 import { CombatStrategy } from "./combat";
 
@@ -30,7 +41,7 @@ export class Engine<T extends Task = Task> {
    *  (regardless of if C is complete or not).
    */
   public available(task: T): boolean {
-    for (const after of task.after) {
+    for (const after of task.after ?? []) {
       const after_task = this.tasks_by_name.get(after);
       if (after_task === undefined) throw `Unknown task dependency ${after} on ${task.name}`;
       if (!after_task.completed()) return false;
@@ -241,10 +252,10 @@ export class Engine<T extends Task = Task> {
       autoGarish: true,
       allowNonMoodBurning: false,
       allowSummonBurning: true,
-      libramSkillsSoftcore: "none"
+      libramSkillsSoftcore: "none",
     });
   }
-};
+}
 
 export const wanderingNCs = new Set<string>([
   "Wooof! Wooooooof!",
