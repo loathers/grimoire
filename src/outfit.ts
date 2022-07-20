@@ -5,12 +5,14 @@ import {
   equippedItem,
   Familiar,
   Item,
+  weaponHands as mafiaWeaponHands,
   Slot,
   toSlot,
   useFamiliar,
-  weaponHands,
 } from "kolmafia";
 import { $familiar, $item, $skill, $slot, $slots, get, have, Requirement } from "libram";
+
+const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
@@ -32,10 +34,7 @@ export class Outfit {
         return true;
 
       case $slot`off-hand`:
-        if (
-          weaponHands(this.equips.get($slot`weapon`) ?? $item`none`) === 2 ||
-          this.equips.has($slot`off-hand`)
-        ) {
+        if (weaponHands(this.equips.get($slot`weapon`)) === 2 || this.equips.has($slot`off-hand`)) {
           if (
             have($familiar`Left-Hand Man`) &&
             [undefined, $familiar`Left-Hand Man`].includes(this.familiar) &&
@@ -59,7 +58,7 @@ export class Outfit {
 
       case $slot`weapon`:
         if (
-          weaponHands(this.equips.get($slot`weapon`) ?? $item`none`) === 1 &&
+          weaponHands(this.equips.get($slot`weapon`)) === 1 &&
           have($skill`Double-Fisted Skull Smashing`) &&
           weaponHands(item) === 1
         ) {
