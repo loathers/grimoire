@@ -1,5 +1,5 @@
-import { Task } from "./task";
-import { get, PropertiesManager } from "libram";
+import { outfitSlots, Task } from "./task";
+import { $slot, get, PropertiesManager } from "libram";
 import {
   adv1,
   buy,
@@ -11,6 +11,7 @@ import {
   retrieveItem,
   runChoice,
   runCombat,
+  toSlot,
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { CombatStrategy } from "./combat";
@@ -109,10 +110,15 @@ export class Engine<T extends Task = Task> {
   createOutfit(task: T): Outfit {
     const spec = typeof task.outfit === "function" ? task.outfit() : task.outfit;
     const outfit = new Outfit();
-    for (const item of spec?.equip ?? []) outfit.equip(item);
-    if (spec?.familiar) outfit.equip(spec.familiar);
-    outfit.avoid = spec?.avoid;
-    outfit.skipDefaults = spec?.skipDefaults ?? false;
+    if (spec !== undefined) {
+      for (const slotName of outfitSlots) {
+        outfit.equip(spec[slotName], slotName === "famequip" ? $slot`familiar` : toSlot(slotName));
+      }
+      outfit.equip(spec.equip);
+      outfit.equip(spec.familiar);
+      outfit.avoid = spec.avoid;
+      outfit.skipDefaults = spec.skipDefaults ?? false;
+    }
     return outfit;
   }
 

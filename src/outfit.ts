@@ -22,13 +22,15 @@ export class Outfit {
   modifier?: string;
   avoid?: Item[];
 
-  private equipItem(item: Item): boolean {
+  private equipItem(item: Item, slot?: Slot): boolean {
     if (!have(item) || !canEquip(item)) return false;
     if (this.avoid?.find((i) => i === item)) return false;
 
-    const slot = toSlot(item);
+    slot = slot ?? toSlot(item);
     switch (slot) {
       case $slot`acc1`:
+      case $slot`acc2`:
+      case $slot`acc3`:
         if (this.accessories.length >= 3) return false;
         this.accessories.push(item);
         return true;
@@ -83,10 +85,16 @@ export class Outfit {
     return true;
   }
 
-  equip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
+  equip(item?: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
     if (item === undefined) return true;
-    if (Array.isArray(item)) return item.every((val) => this.equip(val));
-    return item instanceof Item ? this.equipItem(item) : this.equipFamiliar(item);
+    if (Array.isArray(item)) {
+      if (slot === undefined) {
+        return item.every((val) => this.equip(val));
+      } else {
+        return item.some((val) => this.equip(val, slot));
+      }
+    }
+    return item instanceof Item ? this.equipItem(item, slot) : this.equipFamiliar(item);
   }
 
   canEquip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
