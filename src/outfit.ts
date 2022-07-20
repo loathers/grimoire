@@ -59,7 +59,7 @@ export class Outfit {
 
       case $slot`weapon`:
         if (
-          this.equips.has($slot`weapon`) &&
+          weaponHands(this.equips.get($slot`weapon`) ?? $item`none`) === 1 &&
           have($skill`Double-Fisted Skull Smashing`) &&
           weaponHands(item) === 1
         ) {
