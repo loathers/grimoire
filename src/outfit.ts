@@ -60,7 +60,8 @@ export class Outfit {
         if (
           weaponHands(this.equips.get($slot`weapon`)) === 1 &&
           have($skill`Double-Fisted Skull Smashing`) &&
-          weaponHands(item) === 1
+          weaponHands(item) === 1 &&
+          !this.equips.has($slot`off-hand`)
         ) {
           this.equips.set($slot`off-hand`, item);
           return true;
