@@ -1,5 +1,5 @@
 {
-  "name": "grimoire",
+  "name": "grimoire-kolmafia",
   "version": "0.1.0",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
@@ -10,6 +10,7 @@
     "build:types": "tsc",
     "build:js": "webpack",
     "lint": "eslint src && prettier --check .",
+    "lint:fix": "eslint src --fix && prettier --check --write .",
     "watch": "webpack --watch --progress"
   },
   "devDependencies": {

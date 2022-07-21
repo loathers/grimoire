@@ -9,7 +9,7 @@ const packageData = require("./package.json");
 
 module.exports = {
   entry: {
-    "grimoire": "./src/index.ts",
+    grimoire: "./src/index.ts",
   },
   // Turns on tree-shaking and minification in the default Terser minifier
   // https://webpack.js.org/plugins/terser-webpack-plugin/
