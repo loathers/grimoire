@@ -13,10 +13,15 @@ import {
   runCombat,
 } from "kolmafia";
 import { Outfit } from "./outfit";
-import { CombatStrategy } from "./combat";
+import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
-export class Engine<T extends Task = Task> {
+export class EngineOptions<A extends string = never> {
+  combat_defaults?: ActionDefaults<A>;
+}
+
+export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
+  options: EngineOptions<A>;
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
@@ -24,9 +29,11 @@ export class Engine<T extends Task = Task> {
   /**
    * Create the engine.
    * @param tasks A list of tasks for looking up task dependencies.
+   * @param options Basic configuration of the engine.
    */
-  constructor(tasks: T[]) {
+  constructor(tasks: T[], options?: EngineOptions<A>) {
     this.tasks = tasks;
+    this.options = options ?? {};
     for (const task of tasks) {
       this.tasks_by_name.set(task.name, task);
     }
@@ -61,16 +68,24 @@ export class Engine<T extends Task = Task> {
     this.acquireItems(task);
 
     // Prepare the outfit, with resources.
-    const task_combat = task.combat ?? new CombatStrategy();
+    const task_combat = task.combat ?? new CombatStrategy<A>();
     const outfit = this.createOutfit(task);
+
+    const task_resources = new CombatResources<A>();
+    this.customize(task, outfit, task_combat, task_resources);
     this.dress(task, outfit);
 
     // Prepare combat and choices
-    const macro = task_combat.compile();
+    const macro = task_combat.compile(
+      task_resources,
+      this.options?.combat_defaults,
+      task.do instanceof Location ? task.do : undefined
+    );
     macro.save();
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
+    for (const resource of task_resources.all()) resource.prepare?.();
     this.prepare(task);
     this.do(task);
     while (this.shouldRepeatAdv(task)) this.do(task);
@@ -124,6 +139,29 @@ export class Engine<T extends Task = Task> {
   dress(task: T, outfit: Outfit): void {
     outfit.dress();
   }
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  /**
+   * Perform any engine-specific customization for the outfit and combat plan.
+   *
+   * This is a natural method to override in order to:
+   *   * Enable the use of any resources in the outfit or combat (e.g., allocate banishers).
+   *   * Equip a default outfit.
+   *   * Determine additional monster macros at a global level (e.g., use flyers).
+   * @param task The current executing task.
+   * @param outfit The outfit for the task.
+   * @param combat The combat strategy so far for the task.
+   * @param resources The combat resources assigned so far for the task.
+   */
+  customize(
+    task: T,
+    outfit: Outfit,
+    combat: CombatStrategy<A>,
+    resources: CombatResources<A>
+  ): void {
+    // do nothing by default
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   /**
    * Set the choice settings for the task.

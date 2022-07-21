@@ -22,7 +22,7 @@ export type AcquireItem = {
   optional?: boolean;
 };
 
-export type Task = {
+export type Task<A extends string = never> = {
   name: string;
   after?: string[];
 
@@ -42,7 +42,7 @@ export type Task = {
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
   outfit?: OutfitSpec | (() => OutfitSpec);
-  combat?: CombatStrategy;
+  combat?: CombatStrategy<A>;
 };
 
 export type Limit = {
