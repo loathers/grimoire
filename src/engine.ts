@@ -1,5 +1,5 @@
 import { Task } from "./task";
-import { get, PropertiesManager } from "libram";
+import { $skill, ensureEffect, get, have, isSong, PropertiesManager, uneffect } from "libram";
 import {
   adv1,
   buy,
@@ -8,9 +8,11 @@ import {
   inMultiFight,
   itemAmount,
   Location,
+  myEffects,
   retrieveItem,
   runChoice,
   runCombat,
+  toEffect,
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
@@ -64,8 +66,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   public execute(task: T): void {
-    // Acquire any items first, possibly for later execution steps.
+    // Acquire any items and effects first, possibly for later execution steps.
     this.acquireItems(task);
+    this.acquireEffects(task);
 
     // Prepare the outfit, with resources.
     const task_combat = task.combat ?? new CombatStrategy<A>();
@@ -117,6 +120,28 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
         throw `Task ${task.name} was unable to acquire ${num_needed} ${to_get.item}`;
       }
     }
+  }
+
+  /**
+   * Acquire all effects for the task.
+   * @param task The current executing task.
+   */
+  acquireEffects(task: T): void {
+    const songs = task.effects?.filter((effect) => isSong(effect)) ?? [];
+    if (songs.length > maxSongs()) throw "Too many AT songs";
+    const extraSongs = Object.keys(myEffects())
+      .map((effectName) => toEffect(effectName))
+      .filter((effect) => isSong(effect) && !songs.includes(effect));
+    while (songs.length + extraSongs.length > maxSongs()) {
+      const toRemove = extraSongs.pop();
+      if (toRemove === undefined) {
+        break;
+      } else {
+        uneffect(toRemove);
+      }
+    }
+
+    for (const effect of task.effects ?? []) ensureEffect(effect);
   }
 
   /**
@@ -295,6 +320,10 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       libramSkillsSoftcore: "none",
     });
   }
+}
+
+export function maxSongs(): number {
+  return have($skill`Mariachi Memory`) ? 4 : 3;
 }
 
 export const wanderingNCs = new Set<string>([
