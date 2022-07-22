@@ -1,10 +1,11 @@
-import { Familiar, Item, Location } from "kolmafia";
+import { Effect, Familiar, Item, Location } from "kolmafia";
 import { get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 
 export type Quest<T> = {
   name: string;
+  completed?: () => boolean;
   tasks: T[];
 };
 
@@ -42,6 +43,7 @@ export type Task<A extends string = never> = {
   post?: () => void;
 
   acquire?: AcquireItem[];
+  effects?: Effect[];
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
   outfit?: OutfitSpec | (() => OutfitSpec);
