@@ -1,8 +1,11 @@
-import { Familiar, Item, Location } from "kolmafia";
+import { Effect, Familiar, Item, Location } from "kolmafia";
+import { get } from "libram";
+import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 
-export type Quest<T extends Task = Task> = {
+export type Quest<T> = {
   name: string;
+  completed?: () => boolean;
   tasks: T[];
 };
 
@@ -37,9 +40,10 @@ export type AcquireItem = {
   price?: number;
   useful?: () => boolean;
   optional?: boolean;
+  get?: () => void;
 };
 
-export type Task = {
+export type Task<A extends string = never> = {
   name: string;
   after?: string[];
 
@@ -56,15 +60,36 @@ export type Task = {
   post?: () => void;
 
   acquire?: AcquireItem[];
+  effects?: Effect[];
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
   outfit?: OutfitSpec | (() => OutfitSpec);
-  combat?: CombatStrategy;
+  combat?: CombatStrategy<A>;
 };
 
 export type Limit = {
   tries?: number; // Number of attempts per script run, after which we abort.
   turns?: number; // Number of turns_spent in the task location, after which we abort.
   soft?: number; // Number of attempts per script run, after which we abort with "unlucky".
-  message?: string;
+  message?: string; // An extra message to include with the error.
 };
+
+/**
+ * Returns the state of a quest as a numeric value as follows:
+ *   "unstarted" => -1
+ *   "started" => 0
+ *   "stepNUM" => NUM
+ *   "finished" => 999
+ */
+export function step(questName: StringProperty): number {
+  const stringStep = get(questName);
+  if (stringStep === "unstarted") return -1;
+  else if (stringStep === "started") return 0;
+  else if (stringStep === "finished") return 999;
+  else {
+    if (stringStep.substring(0, 4) !== "step") {
+      throw "Quest state parsing error.";
+    }
+    return parseInt(stringStep.substring(4), 10);
+  }
+}

@@ -1,5 +1,14 @@
 import { outfitSlots, Task } from "./task";
-import { $slot, get, PropertiesManager } from "libram";
+import {
+  $skill,
+  $slot,
+  ensureEffect,
+  get,
+  have,
+  isSong,
+  PropertiesManager,
+  uneffect,
+} from "libram";
 import {
   adv1,
   buy,
@@ -8,16 +17,23 @@ import {
   inMultiFight,
   itemAmount,
   Location,
+  myEffects,
   retrieveItem,
   runChoice,
   runCombat,
+  toEffect,
   toSlot,
 } from "kolmafia";
 import { Outfit } from "./outfit";
-import { CombatStrategy } from "./combat";
+import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
-export class Engine<T extends Task = Task> {
+export class EngineOptions<A extends string = never> {
+  combat_defaults?: ActionDefaults<A>;
+}
+
+export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
+  options: EngineOptions<A>;
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
@@ -25,9 +41,11 @@ export class Engine<T extends Task = Task> {
   /**
    * Create the engine.
    * @param tasks A list of tasks for looking up task dependencies.
+   * @param options Basic configuration of the engine.
    */
-  constructor(tasks: T[]) {
+  constructor(tasks: T[], options?: EngineOptions<A>) {
     this.tasks = tasks;
+    this.options = options ?? {};
     for (const task of tasks) {
       this.tasks_by_name.set(task.name, task);
     }
@@ -58,20 +76,29 @@ export class Engine<T extends Task = Task> {
    * @param task The current executing task.
    */
   public execute(task: T): void {
-    // Acquire any items first, possibly for later execution steps.
+    // Acquire any items and effects first, possibly for later execution steps.
     this.acquireItems(task);
+    this.acquireEffects(task);
 
     // Prepare the outfit, with resources.
-    const task_combat = task.combat ?? new CombatStrategy();
+    const task_combat = task.combat?.clone() ?? new CombatStrategy<A>();
     const outfit = this.createOutfit(task);
+
+    const task_resources = new CombatResources<A>();
+    this.customize(task, outfit, task_combat, task_resources);
     this.dress(task, outfit);
 
     // Prepare combat and choices
-    const macro = task_combat.compile();
+    const macro = task_combat.compile(
+      task_resources,
+      this.options?.combat_defaults,
+      task.do instanceof Location ? task.do : undefined
+    );
     macro.save();
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
+    for (const resource of task_resources.all()) resource.prepare?.();
     this.prepare(task);
     this.do(task);
     while (this.shouldRepeatAdv(task)) this.do(task);
@@ -92,7 +119,9 @@ export class Engine<T extends Task = Task> {
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
       if (num_needed <= num_have) continue;
       if (to_get.useful !== undefined && !to_get.useful()) continue;
-      if (to_get.price !== undefined) {
+      if (to_get.get) {
+        to_get.get();
+      } else if (to_get.price !== undefined) {
         buy(to_get.item, num_needed - num_have, to_get.price);
       } else {
         retrieveItem(to_get.item, num_needed);
@@ -101,6 +130,28 @@ export class Engine<T extends Task = Task> {
         throw `Task ${task.name} was unable to acquire ${num_needed} ${to_get.item}`;
       }
     }
+  }
+
+  /**
+   * Acquire all effects for the task.
+   * @param task The current executing task.
+   */
+  acquireEffects(task: T): void {
+    const songs = task.effects?.filter((effect) => isSong(effect)) ?? [];
+    if (songs.length > maxSongs()) throw "Too many AT songs";
+    const extraSongs = Object.keys(myEffects())
+      .map((effectName) => toEffect(effectName))
+      .filter((effect) => isSong(effect) && !songs.includes(effect));
+    while (songs.length + extraSongs.length > maxSongs()) {
+      const toRemove = extraSongs.pop();
+      if (toRemove === undefined) {
+        break;
+      } else {
+        uneffect(toRemove);
+      }
+    }
+
+    for (const effect of task.effects ?? []) ensureEffect(effect);
   }
 
   /**
@@ -114,10 +165,11 @@ export class Engine<T extends Task = Task> {
       for (const slotName of outfitSlots) {
         outfit.equip(spec[slotName], slotName === "famequip" ? $slot`familiar` : toSlot(slotName));
       }
-      outfit.equip(spec.equip);
-      outfit.equip(spec.familiar);
-      outfit.avoid = spec.avoid;
-      outfit.skipDefaults = spec.skipDefaults ?? false;
+      for (const item of spec?.equip ?? []) outfit.equip(item);
+      if (spec?.familiar) outfit.equip(spec.familiar);
+      outfit.avoid = spec?.avoid;
+      outfit.skipDefaults = spec?.skipDefaults ?? false;
+      outfit.modifier = spec?.modifier;
     }
     return outfit;
   }
@@ -130,6 +182,29 @@ export class Engine<T extends Task = Task> {
   dress(task: T, outfit: Outfit): void {
     outfit.dress();
   }
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  /**
+   * Perform any engine-specific customization for the outfit and combat plan.
+   *
+   * This is a natural method to override in order to:
+   *   * Enable the use of any resources in the outfit or combat (e.g., allocate banishers).
+   *   * Equip a default outfit.
+   *   * Determine additional monster macros at a global level (e.g., use flyers).
+   * @param task The current executing task.
+   * @param outfit The outfit for the task.
+   * @param combat The combat strategy so far for the task.
+   * @param resources The combat resources assigned so far for the task.
+   */
+  customize(
+    task: T,
+    outfit: Outfit,
+    combat: CombatStrategy<A>,
+    resources: CombatResources<A>
+  ): void {
+    // do nothing by default
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   /**
    * Set the choice settings for the task.
@@ -261,6 +336,10 @@ export class Engine<T extends Task = Task> {
       libramSkillsSoftcore: "none",
     });
   }
+}
+
+export function maxSongs(): number {
+  return have($skill`Mariachi Memory`) ? 4 : 3;
 }
 
 export const wanderingNCs = new Set<string>([
