@@ -1,6 +1,9 @@
 import { Quest, Task } from "./task";
 
-export function getTasks<A extends string, T extends Task<A> = Task<A>>(quests: Quest<T>[], implicitAfter = false): T[] {
+export function getTasks<A extends string, T extends Task<A> = Task<A>>(
+  quests: Quest<T>[],
+  implicitAfter = false
+): T[] {
   const result: T[] = [];
   for (const quest of quests) {
     for (const task of quest.tasks) {
@@ -10,7 +13,8 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(quests: 
         after.includes("/") ? after : `${quest.name}/${after}`
       );
       // Include previous task as a dependency
-      if (implicitAfter && task.after === undefined && result.length > 0) task.after = [result[result.length-1].name];
+      if (implicitAfter && task.after === undefined && result.length > 0)
+        task.after = [result[result.length - 1].name];
       result.push(task);
     }
   }
