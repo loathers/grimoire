@@ -106,7 +106,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
       if (num_needed <= num_have) continue;
       if (to_get.useful !== undefined && !to_get.useful()) continue;
-      if (to_get.price !== undefined) {
+      if (to_get.get) {
+        to_get.get();
+      } else if (to_get.price !== undefined) {
         buy(to_get.item, num_needed - num_have, to_get.price);
       } else {
         retrieveItem(to_get.item, num_needed);
