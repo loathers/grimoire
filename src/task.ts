@@ -22,6 +22,7 @@ export type AcquireItem = {
   price?: number;
   useful?: () => boolean;
   optional?: boolean;
+  get?: () => void;
 };
 
 export type Task<A extends string = never> = {
