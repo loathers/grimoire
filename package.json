@@ -1,6 +1,6 @@
 {
   "name": "grimoire-kolmafia",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,16 +36,16 @@
     "kolmafia": ">=1.2.0",
     "libram": ">=0.3.0"
   },
-  "author": "Captain Scotch",
+  "author": "LASS",
   "license": "ISC",
-  "repository": "https://github.com/Kasekopf/grimoire",
+  "repository": "https://github.com/loathing-Associates-Scripting-Society/grimoire",
   "keywords": [
     "KoLMafia",
     "JS",
     "TS"
   ],
   "bugs": {
-    "url": "https://github.com/Kasekopf/grimoire/issues"
+    "url": "https://github.com/loathing-Associates-Scripting-Society/grimoire/issues"
   },
-  "homepage": "https://github.com/Kasekopf/grimoire"
+  "homepage": "https://github.com/loathing-Associates-Scripting-Society/grimoire/grimoire"
 }
