@@ -1,19 +1,21 @@
 {
   "compilerOptions": {
     "rootDir": "src",
-    "noEmit": true,
+    "noEmit": false,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "declaration": false,
+    "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2018"],
-    "module": "commonjs",
+    "module": "ESNext",
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "pretty": true,
     "strict": true,
-    "target": "es2018"
+    "target": "es2018",
+    "moduleResolution": "node",
+    "outDir": "dist"
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "isolatedModules": true /* Transpile each file as a separate module (similar to 'ts.transpileModule'). */
