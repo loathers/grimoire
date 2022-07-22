@@ -143,9 +143,11 @@ export class CombatStrategy<A extends string = never> {
   /**
    * Perform a deep copy of this combat strategy.
    */
-  public clone(): this {
-    const result = { ...this };
-    if (result.default_macro) result.default_macro = [...result.default_macro];
+  public clone(): CombatStrategy<A> {
+    const result = new CombatStrategy<A>();
+    result.starting_macro = this.starting_macro;
+    result.default_action = this.default_action;
+    if (this.default_macro) result.default_macro = [...this.default_macro];
     for (const pair of this.macros) result.macros.set(pair[0], [...pair[1]]);
     for (const pair of this.actions) result.actions.set(pair[0], pair[1]);
     return result;
