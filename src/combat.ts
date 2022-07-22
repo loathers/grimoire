@@ -120,6 +120,13 @@ export class CombatStrategy<A extends string = never> {
   }
 
   /**
+   * Return the general action (if it exists).
+   */
+  public getDefaultAction(): A | undefined {
+    return this.default_action;
+  }
+
+  /**
    * Return all monsters where the provided action was requested.
    */
   public where(action: A): Monster[] {
@@ -211,7 +218,6 @@ export class CombatStrategy<A extends string = never> {
     const proto = CombatStrategyWithActions.prototype as any;
     for (const action of actions) {
       proto[action] = function (this: CombatStrategy<A>, monsters?: Monster[] | Monster) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.action(action, monsters);
       };
     }

@@ -1,6 +1,6 @@
 import { Quest, Task } from "./task";
 
-export function getTasks<T extends Task = Task>(quests: Quest<T>[], implicitAfter = false): T[] {
+export function getTasks<A extends string, T extends Task<A> = Task<A>>(quests: Quest<T>[], implicitAfter = false): T[] {
   const result: T[] = [];
   for (const quest of quests) {
     for (const task of quest.tasks) {
@@ -10,8 +10,7 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[], implicitAfte
         after.includes("/") ? after : `${quest.name}/${after}`
       );
       // Include previous task as a dependency
-      const prev = result.at(-1);
-      if (implicitAfter && task.after === undefined && prev !== undefined) task.after = [prev.name];
+      if (implicitAfter && task.after === undefined && result.length > 0) task.after = [result[result.length-1].name];
       result.push(task);
     }
   }
@@ -29,12 +28,12 @@ export function getTasks<T extends Task = Task>(quests: Quest<T>[], implicitAfte
   return result;
 }
 
-export function orderByRoute<T extends Task = Task>(
+export function orderByRoute<A extends string, T extends Task<A> = Task<A>>(
   tasks: T[],
   routing: string[],
   ignore_missing_tasks?: boolean
-): Task[] {
-  const priorities = new Map<string, [number, Task]>();
+): T[] {
+  const priorities = new Map<string, [number, T]>();
   for (const task of tasks) {
     priorities.set(task.name, [1000, task]);
   }
