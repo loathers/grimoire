@@ -5,6 +5,7 @@ import { CombatStrategy } from "./combat";
 
 export type Quest<T> = {
   name: string;
+  completed?: () => boolean;
   tasks: T[];
 };
 
