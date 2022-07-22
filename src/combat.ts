@@ -265,10 +265,10 @@ class CompressedMacro {
    * Compile the compressed form of the macro.
    */
   public compile(): Macro {
-    let result = new Macro();
+    const result = new Macro();
     this.components.forEach((monsters, macro) => {
       const condition = monsters.map((mon) => `monsterid ${mon.id}`).join(" || ");
-      result = result.if_(condition, macro);
+      result.if_(condition, macro);
     });
     return result;
   }

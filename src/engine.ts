@@ -71,7 +71,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     this.acquireEffects(task);
 
     // Prepare the outfit, with resources.
-    const task_combat = task.combat ?? new CombatStrategy<A>();
+    const task_combat = task.combat?.clone() ?? new CombatStrategy<A>();
     const outfit = this.createOutfit(task);
 
     const task_resources = new CombatResources<A>();
