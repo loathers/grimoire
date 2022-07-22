@@ -155,6 +155,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     if (spec?.familiar) outfit.equip(spec.familiar);
     outfit.avoid = spec?.avoid;
     outfit.skipDefaults = spec?.skipDefaults ?? false;
+    outfit.modifier = spec?.modifier;
     return outfit;
   }
 
