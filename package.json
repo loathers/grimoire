@@ -11,7 +11,8 @@
     "build:js": "webpack",
     "lint": "eslint src && prettier --check .",
     "lint:fix": "eslint src --fix && prettier --check --write .",
-    "watch": "webpack --watch --progress"
+    "watch": "webpack --watch --progress",
+    "prepublishOnly": "yarn run build"
   },
   "files": [
     "dist/**/*.js",
