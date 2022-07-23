@@ -27,6 +27,7 @@ export class Outfit {
     if (this.avoid?.includes(item)) return false;
     if (item === $item`none`) {
       if (slot === undefined) return true;
+      if (this.equips.has(slot)) return false;
       if (slot === $slot`weapon` && this.equips.has($slot`off-hand`)) return false;
       this.equips.set(slot, item);
       return true;
