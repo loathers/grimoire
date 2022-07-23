@@ -25,6 +25,12 @@ export class Outfit {
 
   private equipItem(item: Item, slot?: Slot): boolean {
     if (this.avoid?.includes(item)) return false;
+    if (item === $item`none`) {
+      if (slot === undefined) return true;
+      if (slot === $slot`weapon` && this.equips.has($slot`off-hand`)) return false;
+      this.equips.set(slot, item);
+      return true;
+    }
     const equipment = [...this.equips.values(), ...this.accessories];
     if (slot === undefined && equipment.includes(item)) return true;
     const needed = equipment.filter((i) => i === item).length + 1;
@@ -40,7 +46,7 @@ export class Outfit {
     ]).get(category);
     if (
       holder !== undefined &&
-      (slot === $slot`familiar` || (slot === undefined && handsFull)) &&
+      (slot === $slot`familiar` || (slot === undefined && (handsFull || !canEquip(item)))) &&
       !booleanModifier(item, "Single Equip") &&
       this.equipFamiliar(holder)
     ) {
@@ -48,7 +54,7 @@ export class Outfit {
       return true;
     }
 
-    // Items equipped in Disembodied Hand and LHM ignore stat requirements
+    // Items equipped on equipment-holding familiars ignore stat requirements
     if (!canEquip(item)) return false;
     switch (category) {
       case $slot`weapon`:
@@ -76,7 +82,7 @@ export class Outfit {
   }
 
   private equipFamiliar(familiar: Familiar): boolean {
-    if (!have(familiar)) return false;
+    if (familiar !== $familiar`none` && !have(familiar)) return false;
     if (this.familiar !== undefined && this.familiar !== familiar) return false;
     this.familiar = familiar;
     return true;
