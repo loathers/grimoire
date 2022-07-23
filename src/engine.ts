@@ -163,7 +163,12 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     const outfit = new Outfit();
     if (spec !== undefined) {
       for (const slotName of outfitSlots) {
-        outfit.equip(spec[slotName], slotName === "famequip" ? $slot`familiar` : toSlot(slotName));
+        const slot =
+          new Map([
+            ["famequip", $slot`familiar`],
+            ["offhand", $slot`off-hand`],
+          ]).get(slotName) ?? toSlot(slotName);
+        outfit.equip(spec[slotName], slot);
       }
       for (const item of spec?.equip ?? []) outfit.equip(item);
       if (spec?.familiar) outfit.equip(spec.familiar);
