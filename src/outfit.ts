@@ -39,7 +39,11 @@ export class Outfit {
 
     const category = toSlot(item);
     const handsFull =
-      weaponHands(this.equips.get($slot`weapon`)) === 2 || this.equips.has($slot`off-hand`);
+      weaponHands(this.equips.get($slot`weapon`)) === 2 ||
+      this.equips.has($slot`off-hand`) ||
+      (category === $slot`weapon` &&
+        this.equips.has($slot`weapon`) &&
+        !have($skill`Double-Fisted Skull Smashing`));
     const holder = new Map([
       [$slot`weapon`, $familiar`Disembodied Hand`],
       [$slot`off-hand`, $familiar`Left-Hand Man`],
@@ -48,6 +52,7 @@ export class Outfit {
       holder !== undefined &&
       (slot === $slot`familiar` || (slot === undefined && (handsFull || !canEquip(item)))) &&
       !booleanModifier(item, "Single Equip") &&
+      !this.equips.has($slot`familiar`) &&
       this.equipFamiliar(holder)
     ) {
       this.equips.set($slot`familiar`, item);
@@ -175,10 +180,14 @@ export class Outfit {
     }
   }
 
-  clone(): this {
-    const result = { ...this };
-    result.equips = new Map(result.equips);
-    result.accessories = [...result.accessories];
+  clone(): Outfit {
+    const result = new Outfit();
+    result.equips = new Map(this.equips);
+    result.accessories = [...this.accessories];
+    result.skipDefaults = this.skipDefaults;
+    result.familiar = this.familiar;
+    result.modifier = this.modifier;
+    result.avoid = this.avoid;
     return result;
   }
 }
