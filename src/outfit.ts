@@ -27,7 +27,7 @@ export class Outfit {
     return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
   }
 
-  private isItemAvailable(item: Item): boolean {
+  private isAvailable(item: Item): boolean {
     if (!have(item, this.countEquipped(item) + 1)) return false;
     if (booleanModifier(item, "Single Equip") && this.countEquipped(item) > 0) return false;
     return true;
@@ -75,7 +75,7 @@ export class Outfit {
       return true;
     }
     if (slot === undefined && this.countEquipped(item) > 0) return true;
-    if (!this.isItemAvailable(item)) return false;
+    if (!this.isAvailable(item)) return false;
 
     if (
       (slot === $slot`familiar` || (slot === undefined && this.cannotHoldInHands(item))) &&
@@ -85,7 +85,6 @@ export class Outfit {
       return true;
     }
 
-    // Items equipped on equipment-holding familiars ignore stat requirements
     if (!canEquip(item)) return false;
 
     const category = toSlot(item);
