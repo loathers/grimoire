@@ -23,14 +23,13 @@ export class Outfit {
   modifier?: string;
   avoid?: Item[];
 
-  private allEquipment(): Item[] {
-    return [...this.equips.values(), ...this.accessories];
+  private countEquipped(item: Item): number {
+    return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
   }
 
   private isItemAvailable(item: Item): boolean {
-    const needed = this.allEquipment().filter((i) => i === item).length + 1;
-    if (!have(item, needed)) return false;
-    if (booleanModifier(item, "Single Equip") && needed > 1) return false;
+    if (!have(item, this.countEquipped(item) + 1)) return false;
+    if (booleanModifier(item, "Single Equip") && this.countEquipped(item) > 0) return false;
     return true;
   }
 
@@ -56,13 +55,13 @@ export class Outfit {
     }
   }
 
-  private canHoldWithFamiliar(item: Item): boolean {
+  private holdWithFamiliar(item: Item): boolean {
     const familiar = this.getHoldingFamiliar(item);
     return (
       !booleanModifier(item, "Single Equip") &&
       !this.equips.has($slot`familiar`) &&
       familiar !== undefined &&
-      this.canEquip(familiar)
+      this.equip(familiar)
     );
   }
 
@@ -75,14 +74,13 @@ export class Outfit {
       this.equips.set(slot, item);
       return true;
     }
-    if (slot === undefined && this.allEquipment().includes(item)) return true;
+    if (slot === undefined && this.countEquipped(item) > 0) return true;
     if (!this.isItemAvailable(item)) return false;
 
     if (
       (slot === $slot`familiar` || (slot === undefined && this.cannotHoldInHands(item))) &&
-      this.canHoldWithFamiliar(item)
+      this.holdWithFamiliar(item)
     ) {
-      this.equip(this.getHoldingFamiliar(item));
       this.equips.set($slot`familiar`, item);
       return true;
     }
