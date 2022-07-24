@@ -115,6 +115,8 @@ export class Outfit {
   }
 
   private equipFamiliar(familiar: Familiar): boolean {
+    // TODO check if familiar equipment can be equipped on new familiar
+    if (familiar === $familiar`none` && this.equips.has($slot`familiar`)) return false;
     if (familiar !== $familiar`none` && !have(familiar)) return false;
     if (this.familiar !== undefined && this.familiar !== familiar) return false;
     this.familiar = familiar;
