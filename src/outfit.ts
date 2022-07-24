@@ -23,6 +23,49 @@ export class Outfit {
   modifier?: string;
   avoid?: Item[];
 
+  private allEquipment(): Item[] {
+    return [...this.equips.values(), ...this.accessories];
+  }
+
+  private isItemAvailable(item: Item): boolean {
+    const needed = this.allEquipment().filter((i) => i === item).length + 1;
+    if (!have(item, needed)) return false;
+    if (booleanModifier(item, "Single Equip") && needed > 1) return false;
+    return true;
+  }
+
+  private cannotHoldInHands(item: Item): boolean {
+    return (
+      weaponHands(this.equips.get($slot`weapon`)) === 2 ||
+      this.equips.has($slot`off-hand`) ||
+      (toSlot(item) === $slot`weapon` &&
+        this.equips.has($slot`weapon`) &&
+        !have($skill`Double-Fisted Skull Smashing`)) ||
+      !canEquip(item)
+    );
+  }
+
+  private getHoldingFamiliar(item: Item): Familiar | undefined {
+    switch (toSlot(item)) {
+      case $slot`weapon`:
+        return $familiar`Disembodied Hand`;
+      case $slot`off-hand`:
+        return $familiar`Left-Hand Man`;
+      default:
+        return undefined;
+    }
+  }
+
+  private canHoldWithFamiliar(item: Item): boolean {
+    const familiar = this.getHoldingFamiliar(item);
+    return (
+      !booleanModifier(item, "Single Equip") &&
+      !this.equips.has($slot`familiar`) &&
+      familiar !== undefined &&
+      this.canEquip(familiar)
+    );
+  }
+
   private equipItem(item: Item, slot?: Slot): boolean {
     if (this.avoid?.includes(item)) return false;
     if (item === $item`none`) {
@@ -32,36 +75,22 @@ export class Outfit {
       this.equips.set(slot, item);
       return true;
     }
-    const equipment = [...this.equips.values(), ...this.accessories];
-    if (slot === undefined && equipment.includes(item)) return true;
-    const needed = equipment.filter((i) => i === item).length + 1;
-    if (!have(item, needed)) return false;
-    if (booleanModifier(item, "Single Equip") && needed > 1) return false;
+    if (slot === undefined && this.allEquipment().includes(item)) return true;
+    if (!this.isItemAvailable(item)) return false;
 
-    const category = toSlot(item);
-    const handsFull =
-      weaponHands(this.equips.get($slot`weapon`)) === 2 ||
-      this.equips.has($slot`off-hand`) ||
-      (category === $slot`weapon` &&
-        this.equips.has($slot`weapon`) &&
-        !have($skill`Double-Fisted Skull Smashing`));
-    const holder = new Map([
-      [$slot`weapon`, $familiar`Disembodied Hand`],
-      [$slot`off-hand`, $familiar`Left-Hand Man`],
-    ]).get(category);
     if (
-      holder !== undefined &&
-      (slot === $slot`familiar` || (slot === undefined && (handsFull || !canEquip(item)))) &&
-      !booleanModifier(item, "Single Equip") &&
-      !this.equips.has($slot`familiar`) &&
-      this.equipFamiliar(holder)
+      (slot === $slot`familiar` || (slot === undefined && this.cannotHoldInHands(item))) &&
+      this.canHoldWithFamiliar(item)
     ) {
+      this.equip(this.getHoldingFamiliar(item));
       this.equips.set($slot`familiar`, item);
       return true;
     }
 
     // Items equipped on equipment-holding familiars ignore stat requirements
     if (!canEquip(item)) return false;
+
+    const category = toSlot(item);
     switch (category) {
       case $slot`weapon`:
         if (
