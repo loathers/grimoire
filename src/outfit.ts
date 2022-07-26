@@ -28,20 +28,55 @@ export class Outfit {
   }
 
   private isAvailable(item: Item): boolean {
+    if (this.avoid?.includes(item)) return false;
     if (!have(item, this.countEquipped(item) + 1)) return false;
     if (booleanModifier(item, "Single Equip") && this.countEquipped(item) > 0) return false;
     return true;
   }
 
-  private cannotHoldInHands(item: Item): boolean {
-    return (
-      weaponHands(this.equips.get($slot`weapon`)) === 2 ||
-      this.equips.has($slot`off-hand`) ||
-      (toSlot(item) === $slot`weapon` &&
-        this.equips.has($slot`weapon`) &&
-        !have($skill`Double-Fisted Skull Smashing`)) ||
-      !canEquip(item)
-    );
+  private haveEquipped(item: Item, slot?: Slot): boolean {
+    if (slot === undefined) return this.countEquipped(item) > 0 || item === $item`none`;
+    if ($slots`acc1, acc2, acc3`.includes(slot)) return this.accessories.includes(item); // TODO handle equipping multiple of an accessory
+    return this.equips.get(slot) === item;
+  }
+
+  private equipItemNone(item: Item, slot?: Slot): boolean {
+    if (item !== $item`none`) return false;
+    if (slot === undefined) return true;
+    if (this.equips.has(slot)) return false;
+    if (slot === $slot`weapon` && this.equips.has($slot`off-hand`)) return false; // TODO move logic to unequip
+    this.equips.set(slot, item);
+    return true;
+  }
+
+  private equipNonAccessory(item: Item, slot?: Slot) {
+    if ($slots`none, acc1, acc2, acc3`.includes(toSlot(item))) return false;
+    if (slot !== undefined && slot !== toSlot(item)) return false;
+    if (this.equips.has(toSlot(item))) return false;
+    if (!canEquip(item)) return false;
+    this.equips.set(toSlot(item), item);
+    return true;
+  }
+
+  private equipAccessory(item: Item, slot?: Slot): boolean {
+    if (![undefined, ...$slots`acc1, acc2, acc3`].includes(slot)) return false;
+    if (toSlot(item) !== $slot`acc1`) return false;
+    if (this.accessories.length >= 3) return false;
+    if (!canEquip(item)) return false;
+    this.accessories.push(item);
+    return true;
+  }
+
+  private equipUsingDualWield(item: Item, slot?: Slot): boolean {
+    if (![undefined, $slot`off-hand`].includes(slot)) return false;
+    if (toSlot(item) !== $slot`weapon`) return false;
+    if (weaponHands(this.equips.get($slot`weapon`)) !== 1) return false;
+    if (this.equips.has($slot`off-hand`)) return false;
+    if (!have($skill`Double-Fisted Skull Smashing`)) return false;
+    if (weaponHands(item) !== 1) return false;
+    if (!canEquip(item)) return false;
+    this.equips.set($slot`off-hand`, item);
+    return true;
   }
 
   private getHoldingFamiliar(item: Item): Familiar | undefined {
@@ -55,62 +90,26 @@ export class Outfit {
     }
   }
 
-  private holdWithFamiliar(item: Item): boolean {
+  private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
+    if (![undefined, $slot`familiar`].includes(slot)) return false;
+    if (this.equips.has($slot`familiar`)) return false;
+    if (booleanModifier(item, "Single Equip")) return false;
     const familiar = this.getHoldingFamiliar(item);
-    return (
-      !booleanModifier(item, "Single Equip") &&
-      !this.equips.has($slot`familiar`) &&
-      familiar !== undefined &&
-      this.equip(familiar)
-    );
+    if (familiar === undefined || !this.equip(familiar)) return false;
+    this.equips.set($slot`familiar`, item);
+    return true;
   }
 
   private equipItem(item: Item, slot?: Slot): boolean {
-    if (this.avoid?.includes(item)) return false;
-    if (item === $item`none`) {
-      if (slot === undefined) return true;
-      if (this.equips.has(slot)) return false;
-      if (slot === $slot`weapon` && this.equips.has($slot`off-hand`)) return false;
-      this.equips.set(slot, item);
-      return true;
-    }
-    if (slot === undefined && this.countEquipped(item) > 0) return true;
-    if (!this.isAvailable(item)) return false;
-
-    if (
-      (slot === $slot`familiar` || (slot === undefined && this.cannotHoldInHands(item))) &&
-      this.holdWithFamiliar(item)
-    ) {
-      this.equips.set($slot`familiar`, item);
-      return true;
-    }
-
-    if (!canEquip(item)) return false;
-
-    const category = toSlot(item);
-    switch (category) {
-      case $slot`weapon`:
-        if (
-          [undefined, $slot`off-hand`].includes(slot) &&
-          weaponHands(this.equips.get($slot`weapon`)) === 1 &&
-          have($skill`Double-Fisted Skull Smashing`) &&
-          weaponHands(item) === 1 &&
-          !this.equips.has($slot`off-hand`)
-        ) {
-          this.equips.set($slot`off-hand`, item);
-          return true;
-        }
-        break;
-      case $slot`acc1`:
-        if (![undefined, ...$slots`acc1, acc2, acc3`].includes(slot)) return false;
-        if (this.accessories.length >= 3) return false;
-        this.accessories.push(item);
-        return true;
-    }
-    if (slot !== undefined && slot !== category) return false;
-    if (this.equips.has(category)) return false;
-    this.equips.set(category, item);
-    return true;
+    return (
+      this.haveEquipped(item, slot) ||
+      (this.isAvailable(item) &&
+        (this.equipItemNone(item, slot) ||
+          this.equipNonAccessory(item, slot) ||
+          this.equipAccessory(item, slot) ||
+          this.equipUsingDualWield(item, slot) ||
+          this.equipUsingFamiliar(item, slot)))
+    );
   }
 
   private equipFamiliar(familiar: Familiar): boolean {
