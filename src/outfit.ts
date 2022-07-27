@@ -35,7 +35,7 @@ export class Outfit {
   }
 
   private haveEquipped(item: Item, slot?: Slot): boolean {
-    if (slot === undefined) return this.countEquipped(item) > 0 || item === $item`none`;
+    if (slot === undefined) return this.countEquipped(item) > 0;
     if ($slots`acc1, acc2, acc3`.includes(slot)) return this.accessories.includes(item); // TODO handle equipping multiple of an accessory
     return this.equips.get(slot) === item;
   }
@@ -50,7 +50,7 @@ export class Outfit {
   }
 
   private equipNonAccessory(item: Item, slot?: Slot) {
-    if ($slots`none, acc1, acc2, acc3`.includes(toSlot(item))) return false;
+    if ($slots`acc1, acc2, acc3`.includes(toSlot(item))) return false;
     if (slot !== undefined && slot !== toSlot(item)) return false;
     if (this.equips.has(toSlot(item))) return false;
     if (!canEquip(item)) return false;
