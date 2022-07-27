@@ -53,6 +53,13 @@ export class Outfit {
     if ($slots`acc1, acc2, acc3`.includes(toSlot(item))) return false;
     if (slot !== undefined && slot !== toSlot(item)) return false;
     if (this.equips.has(toSlot(item))) return false;
+    switch (toSlot(item)) {
+      case $slot`off-hand`:
+        if (weaponHands(this.equips.get($slot`weapon`)) !== 1) return false;
+        break;
+      case $slot`familiar`:
+        if (this.familiar === undefined || !canEquip(this.familiar, item)) return false;
+    }
     if (!canEquip(item)) return false;
     this.equips.set(toSlot(item), item);
     return true;
@@ -113,10 +120,10 @@ export class Outfit {
   }
 
   private equipFamiliar(familiar: Familiar): boolean {
-    // TODO check if familiar equipment can be equipped on new familiar
-    if (familiar === $familiar`none` && this.equips.has($slot`familiar`)) return false;
+    if (familiar === this.familiar) return true;
     if (familiar !== $familiar`none` && !have(familiar)) return false;
-    if (this.familiar !== undefined && this.familiar !== familiar) return false;
+    const item = this.equips.get($slot`familiar`);
+    if (item !== undefined && item !== $item`none` && !canEquip(familiar, item)) return false;
     this.familiar = familiar;
     return true;
   }
