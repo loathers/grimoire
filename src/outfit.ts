@@ -121,6 +121,7 @@ export class Outfit {
 
   private equipFamiliar(familiar: Familiar): boolean {
     if (familiar === this.familiar) return true;
+    if (this.familiar !== undefined) return false;
     if (familiar !== $familiar`none` && !have(familiar)) return false;
     const item = this.equips.get($slot`familiar`);
     if (item !== undefined && item !== $item`none` && !canEquip(familiar, item)) return false;
