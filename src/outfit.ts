@@ -59,7 +59,7 @@ export class Outfit {
         }
         break;
       case $slot`familiar`:
-        if (this.familiar === undefined || !canEquip(this.familiar, item)) return false;
+        if (this.familiar !== undefined && !canEquip(this.familiar, item)) return false;
     }
     if (toSlot(item) !== $slot`familiar` && !canEquip(item)) return false;
     this.equips.set(toSlot(item), item);
