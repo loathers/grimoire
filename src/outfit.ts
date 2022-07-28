@@ -44,7 +44,6 @@ export class Outfit {
     if (item !== $item`none`) return false;
     if (slot === undefined) return true;
     if (this.equips.has(slot)) return false;
-    if (slot === $slot`weapon` && this.equips.has($slot`off-hand`)) return false; // TODO move logic to unequip
     this.equips.set(slot, item);
     return true;
   }
@@ -55,7 +54,9 @@ export class Outfit {
     if (this.equips.has(toSlot(item))) return false;
     switch (toSlot(item)) {
       case $slot`off-hand`:
-        if (weaponHands(this.equips.get($slot`weapon`)) !== 1) return false;
+        if (this.equips.has($slot`weapon`) && weaponHands(this.equips.get($slot`weapon`)) !== 1) {
+          return false;
+        }
         break;
       case $slot`familiar`:
         if (this.familiar === undefined || !canEquip(this.familiar, item)) return false;
@@ -77,7 +78,9 @@ export class Outfit {
   private equipUsingDualWield(item: Item, slot?: Slot): boolean {
     if (![undefined, $slot`off-hand`].includes(slot)) return false;
     if (toSlot(item) !== $slot`weapon`) return false;
-    if (weaponHands(this.equips.get($slot`weapon`)) !== 1) return false;
+    if (this.equips.has($slot`weapon`) && weaponHands(this.equips.get($slot`weapon`)) !== 1) {
+      return false;
+    }
     if (this.equips.has($slot`off-hand`)) return false;
     if (!have($skill`Double-Fisted Skull Smashing`)) return false;
     if (weaponHands(item) !== 1) return false;
