@@ -113,9 +113,9 @@ export class Outfit {
   private equipItem(item: Item, slot?: Slot): boolean {
     return (
       this.haveEquipped(item, slot) ||
+      this.equipItemNone(item, slot) ||
       (this.isAvailable(item) &&
-        (this.equipItemNone(item, slot) ||
-          this.equipNonAccessory(item, slot) ||
+        (this.equipNonAccessory(item, slot) ||
           this.equipAccessory(item, slot) ||
           this.equipUsingDualWield(item, slot) ||
           this.equipUsingFamiliar(item, slot)))
