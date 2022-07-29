@@ -168,11 +168,17 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
             ["famequip", $slot`familiar`],
             ["offhand", $slot`off-hand`],
           ]).get(slotName) ?? toSlot(slotName);
-        const item = spec[slotName];
-        if (item !== undefined) outfit.equip(item, slot);
+        const itemOrItems = spec[slotName];
+        if (itemOrItems !== undefined && !outfit.equip(itemOrItems, slot)) {
+          throw `Unable to equip one of [${itemOrItems}] in slot ${slot}`;
+        }
       }
-      for (const item of spec?.equip ?? []) outfit.equip(item);
-      if (spec?.familiar) outfit.equip(spec.familiar);
+      for (const item of spec?.equip ?? []) {
+        if (!outfit.equip(item)) throw `Unable to equip item ${item}`;
+      }
+      if (spec?.familiar !== undefined) {
+        if (!outfit.equip(spec.familiar)) throw `Unable to equip familiar ${spec.familiar}`;
+      }
       outfit.avoid = spec?.avoid;
       outfit.skipDefaults = spec?.skipDefaults ?? false;
       outfit.modifier = spec?.modifier;
