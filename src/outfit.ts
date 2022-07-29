@@ -7,6 +7,7 @@ import {
   Familiar,
   Item,
   weaponHands as mafiaWeaponHands,
+  myFamiliar,
   Slot,
   toSlot,
   useFamiliar,
@@ -214,6 +215,16 @@ export class Outfit {
       if (!requirements.maximize()) {
         throw `Unable to maximize ${this.modifier}`;
       }
+    }
+
+    if (
+      (this.familiar !== undefined && myFamiliar() !== this.familiar) ||
+      ![...this.equips].every(([slot, item]) => equippedItem(slot) === item) ||
+      !this.accessories.every((item) =>
+        $slots`acc1, acc2, acc3`.some((slot) => equippedItem(slot) === item)
+      )
+    ) {
+      throw `Failed to fully dress`;
     }
   }
 
