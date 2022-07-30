@@ -1,4 +1,5 @@
 import {
+  booleanModifier,
   canEquip,
   equip,
   equippedAmount,
@@ -6,11 +7,12 @@ import {
   Familiar,
   Item,
   weaponHands as mafiaWeaponHands,
+  myFamiliar,
   Slot,
   toSlot,
   useFamiliar,
 } from "kolmafia";
-import { $familiar, $item, $skill, $slot, $slots, get, have, Requirement } from "libram";
+import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
@@ -22,115 +24,127 @@ export class Outfit {
   modifier?: string;
   avoid?: Item[];
 
-  private equipItem(item: Item): boolean {
-    if (!have(item) || !canEquip(item)) return false;
-    if (this.avoid?.find((i) => i === item)) return false;
+  private countEquipped(item: Item): number {
+    return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
+  }
 
-    const slot = toSlot(item);
-    switch (slot) {
-      case $slot`acc1`:
-        if (this.accessories.length >= 3) return false;
-        this.accessories.push(item);
-        return true;
+  private isAvailable(item: Item): boolean {
+    if (this.avoid?.includes(item)) return false;
+    if (!have(item, this.countEquipped(item) + 1)) return false;
+    if (booleanModifier(item, "Single Equip") && this.countEquipped(item) > 0) return false;
+    return true;
+  }
 
+  private haveEquipped(item: Item, slot?: Slot): boolean {
+    if (slot === undefined) return this.countEquipped(item) > 0;
+    if ($slots`acc1, acc2, acc3`.includes(slot)) return this.accessories.includes(item); // TODO handle equipping multiple of an accessory
+    return this.equips.get(slot) === item;
+  }
+
+  private equipItemNone(item: Item, slot?: Slot): boolean {
+    if (item !== $item`none`) return false;
+    if (slot === undefined) return true;
+    if (this.equips.has(slot)) return false;
+    this.equips.set(slot, item);
+    return true;
+  }
+
+  private equipNonAccessory(item: Item, slot?: Slot) {
+    if ($slots`acc1, acc2, acc3`.includes(toSlot(item))) return false;
+    if (slot !== undefined && slot !== toSlot(item)) return false;
+    if (this.equips.has(toSlot(item))) return false;
+    switch (toSlot(item)) {
       case $slot`off-hand`:
-        if (weaponHands(this.equips.get($slot`weapon`)) === 2 || this.equips.has($slot`off-hand`)) {
-          if (
-            have($familiar`Left-Hand Man`) &&
-            [undefined, $familiar`Left-Hand Man`].includes(this.familiar) &&
-            !this.equips.get($slot`familiar`)
-          ) {
-            if (item === $item`cursed magnifying glass` && !canChargeVoid()) {
-              const current = this.equips.get($slot`off-hand`);
-              this.equips.set($slot`off-hand`, item);
-              current
-                ? this.equips.set($slot`familiar`, current)
-                : this.equips.delete($slot`familiar`);
-              return true;
-            }
-            this.equips.set($slot`familiar`, item);
-            this.familiar = $familiar`Left-Hand Man`;
-            return true;
-          }
+        if (this.equips.has($slot`weapon`) && weaponHands(this.equips.get($slot`weapon`)) !== 1) {
           return false;
         }
         break;
+      case $slot`familiar`:
+        if (this.familiar !== undefined && !canEquip(this.familiar, item)) return false;
+    }
+    if (toSlot(item) !== $slot`familiar` && !canEquip(item)) return false;
+    this.equips.set(toSlot(item), item);
+    return true;
+  }
 
+  private equipAccessory(item: Item, slot?: Slot): boolean {
+    if (![undefined, ...$slots`acc1, acc2, acc3`].includes(slot)) return false;
+    if (toSlot(item) !== $slot`acc1`) return false;
+    if (this.accessories.length >= 3) return false;
+    if (!canEquip(item)) return false;
+    this.accessories.push(item);
+    return true;
+  }
+
+  private equipUsingDualWield(item: Item, slot?: Slot): boolean {
+    if (![undefined, $slot`off-hand`].includes(slot)) return false;
+    if (toSlot(item) !== $slot`weapon`) return false;
+    if (this.equips.has($slot`weapon`) && weaponHands(this.equips.get($slot`weapon`)) !== 1) {
+      return false;
+    }
+    if (this.equips.has($slot`off-hand`)) return false;
+    if (!have($skill`Double-Fisted Skull Smashing`)) return false;
+    if (weaponHands(item) !== 1) return false;
+    if (!canEquip(item)) return false;
+    this.equips.set($slot`off-hand`, item);
+    return true;
+  }
+
+  private getHoldingFamiliar(item: Item): Familiar | undefined {
+    switch (toSlot(item)) {
       case $slot`weapon`:
-        if (
-          weaponHands(this.equips.get($slot`weapon`)) === 1 &&
-          have($skill`Double-Fisted Skull Smashing`) &&
-          weaponHands(item) === 1 &&
-          !this.equips.has($slot`off-hand`)
-        ) {
-          this.equips.set($slot`off-hand`, item);
-          return true;
-        }
+        return $familiar`Disembodied Hand`;
+      case $slot`off-hand`:
+        return $familiar`Left-Hand Man`;
+      default:
+        return undefined;
     }
+  }
 
-    if (!this.equips.has(slot)) {
-      this.equips.set(slot, item);
-      return true;
-    }
+  private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
+    if (![undefined, $slot`familiar`].includes(slot)) return false;
+    if (this.equips.has($slot`familiar`)) return false;
+    if (booleanModifier(item, "Single Equip")) return false;
+    const familiar = this.getHoldingFamiliar(item);
+    if (familiar === undefined || !this.equip(familiar)) return false;
+    this.equips.set($slot`familiar`, item);
+    return true;
+  }
 
-    return false;
+  private equipItem(item: Item, slot?: Slot): boolean {
+    return (
+      this.haveEquipped(item, slot) ||
+      this.equipItemNone(item, slot) ||
+      (this.isAvailable(item) &&
+        (this.equipNonAccessory(item, slot) ||
+          this.equipAccessory(item, slot) ||
+          this.equipUsingDualWield(item, slot) ||
+          this.equipUsingFamiliar(item, slot)))
+    );
   }
 
   private equipFamiliar(familiar: Familiar): boolean {
-    if (!have(familiar)) return false;
-    if (this.familiar && this.familiar !== familiar) return false;
+    if (familiar === this.familiar) return true;
+    if (this.familiar !== undefined) return false;
+    if (familiar !== $familiar`none` && !have(familiar)) return false;
+    const item = this.equips.get($slot`familiar`);
+    if (item !== undefined && item !== $item`none` && !canEquip(familiar, item)) return false;
     this.familiar = familiar;
     return true;
   }
 
-  equip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
-    if (item === undefined) return true;
-    if (Array.isArray(item)) return item.every((val) => this.equip(val));
-    return item instanceof Item ? this.equipItem(item) : this.equipFamiliar(item);
+  equip(item: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
+    if (Array.isArray(item)) {
+      if (slot !== undefined) return item.some((val) => this.equip(val, slot));
+      return item.every((val) => this.equip(val));
+    }
+    return item instanceof Item ? this.equipItem(item, slot) : this.equipFamiliar(item);
   }
 
-  canEquip(item?: Item | Familiar | (Item | Familiar)[]): boolean {
-    if (item === undefined) return true;
-    if (Array.isArray(item)) return item.every((val) => this.canEquip(val)); // TODO: smarter
-    if (!have(item)) return false;
-    if (item instanceof Item && !canEquip(item)) return false;
-    if (this.avoid && this.avoid.find((i) => i === item) !== undefined) return false;
-
-    if (item instanceof Item) {
-      const slot = toSlot(item);
-      if (slot === $slot`acc1`) {
-        if (this.accessories.length >= 3) return false;
-        return true;
-      }
-      if (slot === $slot`off-hand`) {
-        const weapon = this.equips.get($slot`weapon`);
-        if (weapon && weaponHands(weapon) === 2) return false;
-      }
-      if (!this.equips.has(slot)) {
-        return true;
-      }
-      if (
-        slot === $slot`weapon` &&
-        !this.equips.has($slot`off-hand`) &&
-        have($skill`Double-Fisted Skull Smashing`) &&
-        weaponHands(item)
-      ) {
-        return true;
-      }
-      if (
-        slot === $slot`off-hand` &&
-        have($familiar`Left-Hand Man`) &&
-        this.familiar === undefined &&
-        !this.equips.has($slot`familiar`)
-      ) {
-        return true;
-      }
-      return false;
-    } else {
-      if (this.familiar && this.familiar !== item) return false;
-      if (!have(item)) return false;
-      return true;
-    }
+  canEquip(item: Item | Familiar | (Item | Familiar)[]): boolean {
+    const outfit = this.clone();
+    if (!Array.isArray(item)) item = [item];
+    return item.every((val) => outfit.equip(val));
   }
 
   dress(): void {
@@ -202,9 +216,26 @@ export class Outfit {
         throw `Unable to maximize ${this.modifier}`;
       }
     }
-  }
-}
 
-function canChargeVoid(): boolean {
-  return get("_voidFreeFights") < 5 && get("cursedMagnifyingGlassCount") < 13;
+    if (
+      (this.familiar !== undefined && myFamiliar() !== this.familiar) ||
+      ![...this.equips].every(([slot, item]) => equippedItem(slot) === item) ||
+      !this.accessories.every((item) =>
+        $slots`acc1, acc2, acc3`.some((slot) => equippedItem(slot) === item)
+      )
+    ) {
+      throw `Failed to fully dress`;
+    }
+  }
+
+  clone(): Outfit {
+    const result = new Outfit();
+    result.equips = new Map(this.equips);
+    result.accessories = [...this.accessories];
+    result.skipDefaults = this.skipDefaults;
+    result.familiar = this.familiar;
+    result.modifier = this.modifier;
+    result.avoid = this.avoid;
+    return result;
+  }
 }
