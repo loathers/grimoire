@@ -13,7 +13,9 @@ import {
   adv1,
   buy,
   choiceFollowsFight,
+  cliExecute,
   equippedAmount,
+  getRelated,
   inMultiFight,
   itemAmount,
   Location,
@@ -123,6 +125,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
         to_get.get();
       } else if (to_get.price !== undefined) {
         buy(to_get.item, num_needed - num_have, to_get.price);
+      } else if (Object.keys(getRelated(to_get.item, "fold")).length > 0) {
+        cliExecute(`fold ${to_get.item}`);
       } else {
         retrieveItem(to_get.item, num_needed);
       }
