@@ -103,7 +103,10 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     for (const resource of task_resources.all()) resource.prepare?.();
     this.prepare(task);
     this.do(task);
-    while (this.shouldRepeatAdv(task)) this.do(task);
+    while (this.shouldRepeatAdv(task)) {
+      set("lastEncounter", "");
+      this.do(task);
+    }
     this.post(task);
 
     // Mark that we tried the task, and apply limits
