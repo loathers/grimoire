@@ -57,7 +57,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
 
   /**
    * Determine the next task to perform.
-   * @returns The next available task, or undefined if nothing is available.
+   * By default, this is the first task in the task list that is available.
+   * @returns The next task to perform, or undefined if no tasks are available.
    */
   public getNextTask(): T | undefined {
     return this.tasks.find((task) => this.available(task));
@@ -77,7 +78,6 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
 
   /**
    * Close the engine and reset all properties.
-   *
    * After this has been called, this object should not be used.
    */
   public destruct(): void {
