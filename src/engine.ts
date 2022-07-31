@@ -20,6 +20,7 @@ import {
   itemAmount,
   Location,
   myEffects,
+  print,
   retrieveItem,
   runChoice,
   runCombat,
@@ -55,6 +56,35 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   }
 
   /**
+   * Determine the next task to perform.
+   * By default, this is the first task in the task list that is available.
+   * @returns The next task to perform, or undefined if no tasks are available.
+   */
+  public getNextTask(): T | undefined {
+    return this.tasks.find((task) => this.available(task));
+  }
+
+  /**
+   * Continually get the next task and execute it.
+   * @param actions If given, only perform up to this many tasks.
+   */
+  public run(actions?: number): void {
+    for (let i = 0; i < (actions ?? Infinity); i++) {
+      const task = this.getNextTask();
+      if (!task) return;
+      this.execute(task);
+    }
+  }
+
+  /**
+   * Close the engine and reset all properties.
+   * After this has been called, this object should not be used.
+   */
+  public destruct(): void {
+    this.propertyManager.resetAll();
+  }
+
+  /**
    * Check if the given task is available at this moment.
    * @returns true if all dependencies are complete and the task is ready.
    *  Note that dependencies are not checked transitively. That is, if
@@ -78,6 +108,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   public execute(task: T): void {
+    print(``);
+    print(`Executing ${task.name}`, "blue");
+
     // Acquire any items and effects first, possibly for later execution steps.
     this.acquireItems(task);
     this.acquireEffects(task);
