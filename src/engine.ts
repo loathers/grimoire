@@ -71,9 +71,6 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     for (let i = 0; i < (actions ?? Infinity); i++) {
       const task = this.getNextTask();
       if (!task) return;
-
-      print(``);
-      print(`Executing ${task.name}`, "blue");
       this.execute(task);
     }
   }
@@ -111,6 +108,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   public execute(task: T): void {
+    print(``);
+    print(`Executing ${task.name}`, "blue");
+
     // Acquire any items and effects first, possibly for later execution steps.
     this.acquireItems(task);
     this.acquireEffects(task);
