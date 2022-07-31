@@ -20,6 +20,7 @@ import {
   itemAmount,
   Location,
   myEffects,
+  print,
   retrieveItem,
   runChoice,
   runCombat,
@@ -31,6 +32,7 @@ import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;
+  quiet?: boolean;
 }
 
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
@@ -52,6 +54,47 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       this.tasks_by_name.set(task.name, task);
     }
     this.initPropertiesManager(this.propertyManager);
+  }
+
+  /**
+   * Determine the next task to perform.
+   * @returns The next available task, or undefined if nothing is available.
+   */
+  public getNextTask(): T | undefined {
+    return this.tasks.find((task) => this.available(task));
+  }
+
+  /**
+   * Continually get the next task and execute it.
+   * @param actions If given, only perform up to this many tasks.
+   */
+  public run(actions?: number): void {
+    for (let i = 0; i < (actions ?? Infinity); i++) {
+      const task = this.getNextTask();
+      if (!task) return;
+
+      if (!this.options.quiet) {
+        print(``);
+        print(`Executing ${task.name}`, "blue");
+      }
+      this.execute(task);
+      if (!this.options.quiet) {
+        if (task.completed()) {
+          print(`${task.name} completed!`, "blue");
+        } else {
+          print(`${task.name} not completed!`, "blue");
+        }
+      }
+    }
+  }
+
+  /**
+   * Close the engine and reset all properties.
+   *
+   * After this has been called, this object should not be used.
+   */
+  public destruct(): void {
+    this.propertyManager.resetAll();
   }
 
   /**
