@@ -134,7 +134,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     );
     macro.save();
     writeCcs("[ default ]\nscrollwhendone", "scrollwhendone");
-    cliExecute("scrollwhendone");
+    cliExecute("ccs scrollwhendone");
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
