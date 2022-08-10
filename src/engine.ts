@@ -6,6 +6,7 @@ import {
   get,
   have,
   isSong,
+  Macro,
   PropertiesManager,
   set,
   uneffect,
@@ -27,6 +28,7 @@ import {
   runCombat,
   toEffect,
   toSlot,
+  writeCcs,
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
@@ -131,6 +133,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       task.do instanceof Location ? task.do : undefined
     );
     macro.save();
+    writeCcs("[ default ]\nscrollwhendone", "scrollwhendone");
+    cliExecute("scrollwhendone");
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
@@ -288,13 +292,14 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   do(task: T): void {
+    const macroString = Macro.load().toString();
     if (typeof task.do === "function") {
       task.do();
     } else {
-      adv1(task.do, 0, "");
+      adv1(task.do, 0, macroString);
     }
-    runCombat();
-    while (inMultiFight()) runCombat();
+    runCombat(macroString);
+    while (inMultiFight()) runCombat(macroString);
     if (choiceFollowsFight()) runChoice(-1);
   }
 
