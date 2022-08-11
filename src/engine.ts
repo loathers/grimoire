@@ -153,7 +153,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   acquireItems(task: T): void {
-    for (const to_get of task.acquire || []) {
+    for (const acquire_item of task.acquire || []) {
+      const to_get = acquire_item instanceof Function ? acquire_item() : acquire_item;
       const num_needed = to_get.num ?? 1;
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
       if (num_needed <= num_have) continue;
