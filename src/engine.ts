@@ -27,12 +27,14 @@ import {
   runCombat,
   toEffect,
   toSlot,
+  writeCcs,
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;
+  ccs?: string; // If given, use a custom ccs instead of the Grimoire auto-generated ccs
 }
 
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
@@ -131,6 +133,11 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       task.do instanceof Location ? task.do : undefined
     );
     macro.save();
+    if (!this.options.ccs) {
+      // Use the macro through a CCS file
+      writeCcs(`[ default ]\n"${macro.toString()};"`, "grimoire_macro");
+      cliExecute("ccs grimoire_macro");
+    }
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
@@ -388,6 +395,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       allowSummonBurning: true,
       libramSkillsSoftcore: "none",
     });
+    if (this.options.ccs) cliExecute(`ccs ${this.options.ccs}`);
   }
 }
 
