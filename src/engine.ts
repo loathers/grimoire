@@ -22,18 +22,23 @@ import {
   Location,
   myEffects,
   print,
+  readCcs,
   retrieveItem,
   runChoice,
   runCombat,
   toEffect,
   toSlot,
+  writeCcs,
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;
+  ccs?: string; // If given, use a custom ccs instead of the Grimoire auto-generated ccs
 }
+
+const grimoireCCS = "grimoire_macro";
 
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
@@ -131,6 +136,11 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       task.do instanceof Location ? task.do : undefined
     );
     macro.save();
+    if (!this.options.ccs) {
+      // Use the macro through a CCS file
+      writeCcs(`[ default ]\n"${macro.toString()};"`, grimoireCCS);
+      cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
+    }
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
@@ -389,6 +399,13 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       allowSummonBurning: true,
       libramSkillsSoftcore: "none",
     });
+    if (this.options.ccs !== "") {
+      if (this.options.ccs === undefined && readCcs(grimoireCCS) === "") {
+        // Write a simple CCS so we can switch to it
+        writeCcs("[ default ]\nabort", grimoireCCS);
+      }
+      manager.set({ customCombatScript: this.options.ccs ?? grimoireCCS });
+    }
   }
 }
 
