@@ -14,7 +14,11 @@ export type Modes = {
   umbrella?: "broken" | "forward" | "bucket" | "pitchfork" | "twirling" | "cocoon";
   snowsuit?: "eyebrows" | "smirk" | "nose" | "goatee" | "hat";
   edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
-  retrocape?: ["vampire" | "heck" | "robot", "hold" | "thrill" | "kiss" | "kill"];
+  retrocape?:
+    | ["vampire" | "heck" | "robot", "hold" | "thrill" | "kiss" | "kill"]
+    | "vampire"
+    | "heck"
+    | "robot";
 };
 
 export const modeables = {
