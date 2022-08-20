@@ -231,6 +231,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       if (spec?.familiar !== undefined) {
         if (!outfit.equip(spec.familiar)) throw `Unable to equip familiar ${spec.familiar}`;
       }
+      outfit.modes = spec?.modes ?? {};
       outfit.avoid = spec?.avoid;
       outfit.skipDefaults = spec?.skipDefaults ?? false;
       outfit.modifier = spec?.modifier;
