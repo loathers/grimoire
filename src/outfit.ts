@@ -1,10 +1,12 @@
 import {
   booleanModifier,
   canEquip,
+  cliExecute,
   equip,
   equippedAmount,
   equippedItem,
   Familiar,
+  haveEquipped,
   Item,
   weaponHands as mafiaWeaponHands,
   myFamiliar,
@@ -13,12 +15,14 @@ import {
   useFamiliar,
 } from "kolmafia";
 import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
+import { modeables, Modes } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
   accessories: Item[] = [];
+  modes: Modes = {};
   skipDefaults = false;
   familiar?: Familiar;
   modifier?: string;
@@ -217,6 +221,14 @@ export class Outfit {
       }
     }
 
+    for (const mode in this.modes) {
+      if (haveEquipped(modeables[mode as keyof Modes])) {
+        const cmd = this.modes[mode as keyof Modes];
+        const args = Array.isArray(cmd) ? cmd.join(" ") : cmd;
+        cliExecute(`${mode} ${args}`);
+      }
+    }
+
     if (
       (this.familiar !== undefined && myFamiliar() !== this.familiar) ||
       ![...this.equips].every(([slot, item]) => equippedItem(slot) === item) ||
@@ -232,6 +244,7 @@ export class Outfit {
     const result = new Outfit();
     result.equips = new Map(this.equips);
     result.accessories = [...this.accessories];
+    result.modes = { ...this.modes };
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
     result.modifier = this.modifier;

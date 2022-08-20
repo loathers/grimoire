@@ -1,5 +1,5 @@
 import { Effect, Familiar, Item, Location } from "kolmafia";
-import { get } from "libram";
+import { $item, get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 
@@ -8,6 +8,22 @@ export type Quest<T> = {
   completed?: () => boolean;
   tasks: T[];
 };
+
+export type Modes = {
+  backupcamera?: "ml" | "meat" | "init";
+  umbrella?: "broken" | "forward" | "bucket" | "pitchfork" | "twirling" | "cocoon";
+  snowsuit?: "eyebrows" | "smirk" | "nose" | "goatee" | "hat";
+  edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
+  retrocape?: ["vampire" | "heck" | "robot", "hold" | "thrill" | "kiss" | "kill"];
+};
+
+export const modeables = {
+  backupcamera: $item`backup camera`,
+  umbrella: $item`unbreakable umbrella`,
+  snowsuit: $item`Snow Suit`,
+  edpiece: $item`The Crown of Ed the Undying`,
+  retrocape: $item`unwrapped knock-off retro superhero cape`,
+} as const;
 
 export const outfitSlots = [
   "hat",
@@ -28,6 +44,7 @@ export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
+  modes?: Modes; // Modes to set on particular items
   modifier?: string; // Modifier to maximize
   familiar?: Familiar; // Familiar to use
   avoid?: Item[]; // Items that cause issues and so should not be equipped
