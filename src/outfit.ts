@@ -185,46 +185,31 @@ export class Outfit {
     }
 
     if (this.modifier) {
-      // Handle familiar equipment manually to avoid weird Left-Hand Man behavior
-      const fam_equip = this.equips.get($slot`familiar`);
-      if (fam_equip !== undefined) {
-        const index = targetEquipment.indexOf(fam_equip);
-        if (index > -1) targetEquipment.splice(index, 1);
-      }
-
-      let requirements = Requirement.merge([
+      const requirements = Requirement.merge([
         new Requirement([this.modifier], {
-          forceEquip: targetEquipment.concat(...accessoryEquips),
+          preventSlot: [...this.equips.keys()],
+          forceEquip: accessoryEquips,
+          preventEquip: this.avoid,
         }),
       ]);
-
-      if (fam_equip !== undefined) {
-        requirements = Requirement.merge([
-          requirements,
-          new Requirement([], { preventSlot: [$slot`familiar`] }),
-        ]);
-      }
-
-      if (this.avoid !== undefined) {
-        requirements = Requirement.merge([
-          requirements,
-          new Requirement([], { preventEquip: this.avoid }),
-        ]);
-      }
 
       if (!requirements.maximize()) {
         throw `Unable to maximize ${this.modifier}`;
       }
     }
 
-    if (
-      (this.familiar !== undefined && myFamiliar() !== this.familiar) ||
-      ![...this.equips].every(([slot, item]) => equippedItem(slot) === item) ||
-      !this.accessories.every((item) =>
-        $slots`acc1, acc2, acc3`.some((slot) => equippedItem(slot) === item)
-      )
-    ) {
-      throw `Failed to fully dress`;
+    // Verify that all equipment was indeed equipped
+    if (this.familiar !== undefined && myFamiliar() !== this.familiar)
+      throw `Failed to fully dress (expected: familiar ${this.familiar})`;
+    for (const slotted_item of this.equips) {
+      if (equippedItem(slotted_item[0]) !== slotted_item[1]) {
+        throw `Failed to fully dress (expected: ${slotted_item[0]} ${slotted_item[1]})`;
+      }
+    }
+    for (const accessory of this.accessories) {
+      if (!$slots`acc1, acc2, acc3`.some((slot) => equippedItem(slot) === accessory)) {
+        throw `Failed to fully dress (expected: acc ${accessory})`;
+      }
     }
   }
 
