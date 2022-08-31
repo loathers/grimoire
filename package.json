@@ -1,6 +1,6 @@
 {
   "name": "grimoire-kolmafia",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,7 +37,9 @@
     "webpack-cli": "^4.8.0"
   },
   "dependencies": {
-    "core-js": "^3.16.4",
+    "core-js": "^3.16.4"
+  },
+  "peerDependencies": {
     "kolmafia": "^3.4.0",
     "libram": "^0.6.24"
   },
