@@ -42,7 +42,7 @@ export class Outfit {
   }
 
   private equipItemNone(item: Item, slot?: Slot): boolean {
-    if (item !== $item`none`) return false;
+    if (item !== $item.none) return false;
     if (slot === undefined) return true;
     if (this.equips.has(slot)) return false;
     this.equips.set(slot, item);
@@ -126,9 +126,9 @@ export class Outfit {
   private equipFamiliar(familiar: Familiar): boolean {
     if (familiar === this.familiar) return true;
     if (this.familiar !== undefined) return false;
-    if (familiar !== $familiar`none` && !have(familiar)) return false;
+    if (familiar !== $familiar.none && !have(familiar)) return false;
     const item = this.equips.get($slot`familiar`);
-    if (item !== undefined && item !== $item`none` && !canEquip(familiar, item)) return false;
+    if (item !== undefined && item !== $item.none && !canEquip(familiar, item)) return false;
     this.familiar = familiar;
     return true;
   }
@@ -156,7 +156,7 @@ export class Outfit {
         targetEquipment.includes(equippedItem(slot)) &&
         this.equips.get(slot) !== equippedItem(slot)
       )
-        equip(slot, $item`none`);
+        equip(slot, $item.none);
     }
 
     //Order is anchored here to prevent DFSS shenanigans
@@ -176,7 +176,7 @@ export class Outfit {
       const currentEquip = equippedItem(slot);
       //We never want an empty accessory slot
       if (
-        currentEquip === $item`none` ||
+        currentEquip === $item.none ||
         equippedAmount(currentEquip) >
           accessoryEquips.filter((accessory) => accessory === currentEquip).length
       ) {
