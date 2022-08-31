@@ -138,7 +138,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     macro.save();
     if (!this.options.ccs) {
       // Use the macro through a CCS file
-      writeCcs(`[ default ]\n"${macro.toString()};"`, grimoireCCS);
+      writeCcs(`[ default ]\n"${macro.toString()}"`, grimoireCCS);
       cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
     }
     this.setChoices(task, this.propertyManager);
