@@ -1,7 +1,6 @@
-import { outfitSlots, Task } from "./task";
+import { Task } from "./task";
 import {
   $skill,
-  $slot,
   ensureEffect,
   get,
   have,
@@ -27,7 +26,6 @@ import {
   runChoice,
   runCombat,
   toEffect,
-  toSlot,
   writeCcs,
 } from "kolmafia";
 import { Outfit } from "./outfit";
@@ -214,26 +212,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     const spec = typeof task.outfit === "function" ? task.outfit() : task.outfit;
     const outfit = new Outfit();
     if (spec !== undefined) {
-      for (const slotName of outfitSlots) {
-        const slot =
-          new Map([
-            ["famequip", $slot`familiar`],
-            ["offhand", $slot`off-hand`],
-          ]).get(slotName) ?? toSlot(slotName);
-        const itemOrItems = spec[slotName];
-        if (itemOrItems !== undefined && !outfit.equip(itemOrItems, slot)) {
-          throw `Unable to equip one of [${itemOrItems}] in slot ${slot}`;
-        }
+      if (!outfit.equip(spec)) {
+        throw `Unable to equip all items for ${task.name}`;
       }
-      for (const item of spec?.equip ?? []) {
-        if (!outfit.equip(item)) throw `Unable to equip item ${item}`;
-      }
-      if (spec?.familiar !== undefined) {
-        if (!outfit.equip(spec.familiar)) throw `Unable to equip familiar ${spec.familiar}`;
-      }
-      outfit.avoid = spec?.avoid;
-      outfit.skipDefaults = spec?.skipDefaults ?? false;
-      outfit.modifier = spec?.modifier;
     }
     return outfit;
   }

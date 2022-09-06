@@ -13,6 +13,7 @@ import {
   useFamiliar,
 } from "kolmafia";
 import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
+import { outfitSlots, OutfitSpec } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
@@ -21,8 +22,8 @@ export class Outfit {
   accessories: Item[] = [];
   skipDefaults = false;
   familiar?: Familiar;
-  modifier?: string;
-  avoid?: Item[];
+  modifier = "";
+  avoid: Item[] = [];
 
   private countEquipped(item: Item): number {
     return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
@@ -133,18 +134,45 @@ export class Outfit {
     return true;
   }
 
-  equip(item: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
+  private equipSpec(spec: OutfitSpec): boolean {
+    let succeeded = true;
+    for (const slotName of outfitSlots) {
+      const slot =
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName);
+      const itemOrItems = spec[slotName];
+      if (itemOrItems !== undefined && !this.equip(itemOrItems, slot)) succeeded = false;
+    }
+    for (const item of spec?.equip ?? []) {
+      if (!this.equip(item)) succeeded = false;
+    }
+    if (spec?.familiar !== undefined) {
+      if (!this.equip(spec.familiar)) succeeded = false;
+    }
+    this.avoid.push(...spec?.avoid ?? [])
+    this.skipDefaults = this.skipDefaults && (spec.skipDefaults ?? false);
+    if (spec.modifier) {
+      this.modifier += (this.modifier ? ", " : "") + spec.modifier;
+    }
+    return succeeded;
+  }
+
+  equip(item: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
     if (Array.isArray(item)) {
       if (slot !== undefined) return item.some((val) => this.equip(val, slot));
       return item.every((val) => this.equip(val));
     }
-    return item instanceof Item ? this.equipItem(item, slot) : this.equipFamiliar(item);
+    if (item instanceof Item) return this.equipItem(item, slot);
+    if (item instanceof Familiar) return this.equipFamiliar(item);
+    return this.equipSpec(item);
   }
 
-  canEquip(item: Item | Familiar | (Item | Familiar)[]): boolean {
+  canEquip(item: Item | Familiar | OutfitSpec | Item[]): boolean {
     const outfit = this.clone();
-    if (!Array.isArray(item)) item = [item];
-    return item.every((val) => outfit.equip(val));
+    if (Array.isArray(item)) return item.every((val) => outfit.equip(val));
+    return outfit.equip(item);
   }
 
   dress(): void {
