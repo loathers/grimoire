@@ -12,7 +12,7 @@ import {
   toSlot,
   useFamiliar,
 } from "kolmafia";
-import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
+import { $familiar, $item, $skill, $slot, $slots, have, MaximizeOptions, Requirement } from "libram";
 import { outfitSlots, OutfitSpec } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
@@ -175,7 +175,11 @@ export class Outfit {
     return outfit.equip(item);
   }
 
-  dress(): void {
+  /**
+   * Equip this outfit.
+   * @param extraOptions Passed to any maximizer calls made.
+   */
+  dress(extraOptions?: Partial<MaximizeOptions>): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
     const accessorySlots = $slots`acc1, acc2, acc3`;
@@ -213,15 +217,14 @@ export class Outfit {
     }
 
     if (this.modifier) {
-      const requirements = Requirement.merge([
-        new Requirement([this.modifier], {
-          preventSlot: [...this.equips.keys()],
-          forceEquip: accessoryEquips,
-          preventEquip: this.avoid,
-        }),
-      ]);
+      const allRequirements = [new Requirement([this.modifier], {
+        preventSlot: [...this.equips.keys()],
+        forceEquip: accessoryEquips,
+        preventEquip: this.avoid,
+      })];
+      if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
 
-      if (!requirements.maximize()) {
+      if (!Requirement.merge(allRequirements).maximize()) {
         throw `Unable to maximize ${this.modifier}`;
       }
     }
