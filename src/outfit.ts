@@ -12,7 +12,17 @@ import {
   toSlot,
   useFamiliar,
 } from "kolmafia";
-import { $familiar, $item, $skill, $slot, $slots, have, Requirement } from "libram";
+import {
+  $familiar,
+  $item,
+  $skill,
+  $slot,
+  $slots,
+  have,
+  MaximizeOptions,
+  Requirement,
+} from "libram";
+import { outfitSlots, OutfitSpec } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
@@ -21,8 +31,8 @@ export class Outfit {
   accessories: Item[] = [];
   skipDefaults = false;
   familiar?: Familiar;
-  modifier?: string;
-  avoid?: Item[];
+  modifier = "";
+  avoid: Item[] = [];
 
   private countEquipped(item: Item): number {
     return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
@@ -133,21 +143,51 @@ export class Outfit {
     return true;
   }
 
-  equip(item: Item | Familiar | (Item | Familiar)[], slot?: Slot): boolean {
-    if (Array.isArray(item)) {
-      if (slot !== undefined) return item.some((val) => this.equip(val, slot));
-      return item.every((val) => this.equip(val));
+  private equipSpec(spec: OutfitSpec): boolean {
+    let succeeded = true;
+    for (const slotName of outfitSlots) {
+      const slot =
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName);
+      const itemOrItems = spec[slotName];
+      if (itemOrItems !== undefined && !this.equip(itemOrItems, slot)) succeeded = false;
     }
-    return item instanceof Item ? this.equipItem(item, slot) : this.equipFamiliar(item);
+    for (const item of spec?.equip ?? []) {
+      if (!this.equip(item)) succeeded = false;
+    }
+    if (spec?.familiar !== undefined) {
+      if (!this.equip(spec.familiar)) succeeded = false;
+    }
+    this.avoid.push(...(spec?.avoid ?? []));
+    this.skipDefaults = this.skipDefaults || (spec.skipDefaults ?? false);
+    if (spec.modifier) {
+      this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
+    }
+    return succeeded;
   }
 
-  canEquip(item: Item | Familiar | (Item | Familiar)[]): boolean {
+  equip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+    if (Array.isArray(thing)) {
+      if (slot !== undefined) return thing.some((val) => this.equip(val, slot));
+      return thing.every((val) => this.equip(val));
+    }
+    if (thing instanceof Item) return this.equipItem(thing, slot);
+    if (thing instanceof Familiar) return this.equipFamiliar(thing);
+    return this.equipSpec(thing);
+  }
+
+  canEquip(thing: Item | Familiar | OutfitSpec | Item[]): boolean {
     const outfit = this.clone();
-    if (!Array.isArray(item)) item = [item];
-    return item.every((val) => outfit.equip(val));
+    return outfit.equip(thing);
   }
 
-  dress(): void {
+  /**
+   * Equip this outfit.
+   * @param extraOptions Passed to any maximizer calls made.
+   */
+  dress(extraOptions?: Partial<MaximizeOptions>): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
     const accessorySlots = $slots`acc1, acc2, acc3`;
@@ -185,15 +225,16 @@ export class Outfit {
     }
 
     if (this.modifier) {
-      const requirements = Requirement.merge([
+      const allRequirements = [
         new Requirement([this.modifier], {
           preventSlot: [...this.equips.keys()],
           forceEquip: accessoryEquips,
           preventEquip: this.avoid,
         }),
-      ]);
+      ];
+      if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
 
-      if (!requirements.maximize()) {
+      if (!Requirement.merge(allRequirements).maximize()) {
         throw `Unable to maximize ${this.modifier}`;
       }
     }
@@ -220,7 +261,7 @@ export class Outfit {
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
     result.modifier = this.modifier;
-    result.avoid = this.avoid;
+    result.avoid = [...this.avoid];
     return result;
   }
 }
