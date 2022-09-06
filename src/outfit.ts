@@ -12,7 +12,16 @@ import {
   toSlot,
   useFamiliar,
 } from "kolmafia";
-import { $familiar, $item, $skill, $slot, $slots, have, MaximizeOptions, Requirement } from "libram";
+import {
+  $familiar,
+  $item,
+  $skill,
+  $slot,
+  $slots,
+  have,
+  MaximizeOptions,
+  Requirement,
+} from "libram";
 import { outfitSlots, OutfitSpec } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
@@ -151,7 +160,7 @@ export class Outfit {
     if (spec?.familiar !== undefined) {
       if (!this.equip(spec.familiar)) succeeded = false;
     }
-    this.avoid.push(...spec?.avoid ?? [])
+    this.avoid.push(...(spec?.avoid ?? []));
     this.skipDefaults = this.skipDefaults && (spec.skipDefaults ?? false);
     if (spec.modifier) {
       this.modifier += (this.modifier ? ", " : "") + spec.modifier;
@@ -217,11 +226,13 @@ export class Outfit {
     }
 
     if (this.modifier) {
-      const allRequirements = [new Requirement([this.modifier], {
-        preventSlot: [...this.equips.keys()],
-        forceEquip: accessoryEquips,
-        preventEquip: this.avoid,
-      })];
+      const allRequirements = [
+        new Requirement([this.modifier], {
+          preventSlot: [...this.equips.keys()],
+          forceEquip: accessoryEquips,
+          preventEquip: this.avoid,
+        }),
+      ];
       if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
 
       if (!Requirement.merge(allRequirements).maximize()) {

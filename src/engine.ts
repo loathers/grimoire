@@ -1,14 +1,5 @@
 import { Task } from "./task";
-import {
-  $skill,
-  ensureEffect,
-  get,
-  have,
-  isSong,
-  PropertiesManager,
-  set,
-  uneffect,
-} from "libram";
+import { $skill, ensureEffect, get, have, isSong, PropertiesManager, set, uneffect } from "libram";
 import {
   adv1,
   buy,
