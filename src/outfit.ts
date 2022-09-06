@@ -161,7 +161,7 @@ export class Outfit {
       if (!this.equip(spec.familiar)) succeeded = false;
     }
     this.avoid.push(...(spec?.avoid ?? []));
-    this.skipDefaults = this.skipDefaults && (spec.skipDefaults ?? false);
+    this.skipDefaults = this.skipDefaults || (spec.skipDefaults ?? false);
     if (spec.modifier) {
       this.modifier += (this.modifier ? ", " : "") + spec.modifier;
     }
