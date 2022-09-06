@@ -168,20 +168,19 @@ export class Outfit {
     return succeeded;
   }
 
-  equip(item: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
-    if (Array.isArray(item)) {
-      if (slot !== undefined) return item.some((val) => this.equip(val, slot));
-      return item.every((val) => this.equip(val));
+  equip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+    if (Array.isArray(thing)) {
+      if (slot !== undefined) return thing.some((val) => this.equip(val, slot));
+      return thing.every((val) => this.equip(val));
     }
-    if (item instanceof Item) return this.equipItem(item, slot);
-    if (item instanceof Familiar) return this.equipFamiliar(item);
-    return this.equipSpec(item);
+    if (thing instanceof Item) return this.equipItem(thing, slot);
+    if (thing instanceof Familiar) return this.equipFamiliar(thing);
+    return this.equipSpec(thing);
   }
 
-  canEquip(item: Item | Familiar | OutfitSpec | Item[]): boolean {
+  canEquip(thing: Item | Familiar | OutfitSpec | Item[]): boolean {
     const outfit = this.clone();
-    if (Array.isArray(item)) return item.every((val) => outfit.equip(val));
-    return outfit.equip(item);
+    return outfit.equip(thing);
   }
 
   /**
