@@ -163,7 +163,7 @@ export class Outfit {
     this.avoid.push(...(spec?.avoid ?? []));
     this.skipDefaults = this.skipDefaults || (spec.skipDefaults ?? false);
     if (spec.modifier) {
-      this.modifier += (this.modifier ? ", " : "") + spec.modifier;
+      this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
     }
     return succeeded;
   }
@@ -261,7 +261,7 @@ export class Outfit {
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
     result.modifier = this.modifier;
-    result.avoid = this.avoid;
+    result.avoid = [...this.avoid];
     return result;
   }
 }
