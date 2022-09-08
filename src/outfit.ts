@@ -6,6 +6,7 @@ import {
   equippedItem,
   Familiar,
   Item,
+  logprint,
   weaponHands as mafiaWeaponHands,
   myFamiliar,
   Slot,
@@ -237,6 +238,7 @@ export class Outfit {
       if (!Requirement.merge(allRequirements).maximize()) {
         throw `Unable to maximize ${this.modifier}`;
       }
+      logprint(`Maximize: ${this.modifier}`);
     }
 
     // Verify that all equipment was indeed equipped
