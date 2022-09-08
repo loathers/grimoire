@@ -19,6 +19,7 @@ export type Modes = {
     | "vampire"
     | "heck"
     | "robot";
+parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
 };
 
 export const modeables = {
