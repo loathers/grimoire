@@ -22,6 +22,7 @@ function undelay(macro: DelayedMacro): Macro {
  *
  * An action is a strategy for dealing with a monster that is not fully
  * defined in the task. The possible actions are set with the type parameter A.
+ * Actions should typically end the fight.
  *
  * For example, a task may want to banish a monster but not necessarily know or
  * care which banisher is used. Instead, it is best for the engine to determine
@@ -38,14 +39,14 @@ function undelay(macro: DelayedMacro): Macro {
  *
  * A monster may have both a macro and an action defined, and a macro or action
  * can be specified to be done on all monsters. The order of combat is then:
- * 1. The macro given in .startingMacro().
+ * 1. The macro(s) given in .startingMacro().
  * 2. The monster-specific macro(s) from .macro().
- * 3. The monster-specific action from .action().
- * 4. The general macro(s) from .macro().
+ * 3. The general macro(s) from .macro().
+ * 4. The monster-specific action from .action().
  * 5. The general action from .action().
  */
 export class CombatStrategy<A extends string = never> {
-  private starting_macro?: DelayedMacro;
+  private starting_macro?: DelayedMacro[];
   private default_macro?: DelayedMacro[];
   private macros: Map<Monster, DelayedMacro[]> = new Map();
   private default_action?: A;
@@ -59,7 +60,7 @@ export class CombatStrategy<A extends string = never> {
    * @param monsters Which monsters to use the macro on. If not given, add the
    *  macro as a general macro.
    * @param prepend If true, add the macro before all previous macros for
-   *    the same monster.
+   *    the same monster. If false, add after all previous macros.
    * @returns this
    */
   public macro(macro: DelayedMacro, monsters?: Monster[] | Monster, prepend?: boolean): this {
@@ -81,10 +82,14 @@ export class CombatStrategy<A extends string = never> {
   /**
    * Add a macro to perform at the start of combat.
    * @param macro The macro to perform.
+   * @param prepend If true, add the macro before all previous starting
+   *    macros. If false, add after all previous starting macros.
    * @returns this
    */
-  public startingMacro(macro: DelayedMacro): this {
-    this.starting_macro = macro;
+  public startingMacro(macro: DelayedMacro, prepend?: boolean): this {
+    if (this.starting_macro === undefined) this.starting_macro = [];
+    if (prepend) this.starting_macro.unshift(macro);
+    else this.starting_macro.push(macro);
     return this;
   }
 
@@ -145,7 +150,7 @@ export class CombatStrategy<A extends string = never> {
    */
   public clone(): CombatStrategy<A> {
     const result = new CombatStrategy<A>();
-    result.starting_macro = this.starting_macro;
+    if (this.starting_macro) result.starting_macro = [...this.starting_macro];
     result.default_action = this.default_action;
     if (this.default_macro) result.default_macro = [...this.default_macro];
     for (const pair of this.macros) result.macros.set(pair[0], [...pair[1]]);
@@ -170,7 +175,7 @@ export class CombatStrategy<A extends string = never> {
 
     // If there is macro precursor, do it now
     if (this.starting_macro) {
-      result.step(undelay(this.starting_macro));
+      result.step(...this.starting_macro.map(undelay));
     }
 
     // Perform any monster-specific macros (these may or may not end the fight)
@@ -180,7 +185,10 @@ export class CombatStrategy<A extends string = never> {
     });
     result.step(monster_macros.compile());
 
-    // Perform any monster-specific actions
+    // Perform the non-monster specific macro
+    if (this.default_macro) result.step(...this.default_macro.map(undelay));
+
+    // Perform any monster-specific actions (these should end the fight)
     const monster_actions = new CompressedMacro();
     this.actions.forEach((action, key) => {
       const macro = resources.getMacro(action) ?? defaults?.[action]?.(key);
@@ -188,10 +196,7 @@ export class CombatStrategy<A extends string = never> {
     });
     result.step(monster_actions.compile());
 
-    // Perform the non-monster specific macro
-    if (this.default_macro) result.step(...this.default_macro.map(undelay));
-
-    // Perform the non-monster specific action
+    // Perform the non-monster specific action (these should end the fight)
     if (this.default_action) {
       const macro =
         resources.getMacro(this.default_action) ?? defaults?.[this.default_action]?.(location);
