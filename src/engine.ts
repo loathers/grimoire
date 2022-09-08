@@ -10,6 +10,7 @@ import {
   inMultiFight,
   itemAmount,
   Location,
+  logprint,
   myEffects,
   print,
   readCcs,
@@ -119,17 +120,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     this.dress(task, outfit);
 
     // Prepare combat and choices
-    const macro = task_combat.compile(
-      task_resources,
-      this.options?.combat_defaults,
-      task.do instanceof Location ? task.do : undefined
-    );
-    macro.save();
-    if (!this.options.ccs) {
-      // Use the macro through a CCS file
-      writeCcs(`[ default ]\n"${macro.toString()}"`, grimoireCCS);
-      cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
-    }
+    this.setCombat(task, task_combat, task_resources);
     this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
@@ -256,6 +247,27 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       else choices[choice_id] = choice();
     }
     manager.setChoices(choices);
+  }
+
+  /**
+   * Save the combat macro for this task.
+   * @param task The current executing task.
+   * @param combat The completed combat strategy far for the task.
+   * @param resources The combat resources assigned for the task.
+   */
+  setCombat(task: T, task_combat: CombatStrategy<A>, task_resources: CombatResources<A>): void {
+    const macro = task_combat.compile(
+      task_resources,
+      this.options?.combat_defaults,
+      task.do instanceof Location ? task.do : undefined
+    );
+    macro.save();
+    if (!this.options.ccs) {
+      // Use the macro through a CCS file
+      writeCcs(`[ default ]\n"${macro.toString()}"`, grimoireCCS);
+      cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
+    }
+    logprint(`Macro: ${macro.toString()}`);
   }
 
   /**
