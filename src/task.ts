@@ -28,6 +28,7 @@ export const modeables = {
   snowsuit: $item`Snow Suit`,
   edpiece: $item`The Crown of Ed the Undying`,
   retrocape: $item`unwrapped knock-off retro superhero cape`,
+	parka: $item`Jurassic Parka`,
 } as const;
 
 export const outfitSlots = [
