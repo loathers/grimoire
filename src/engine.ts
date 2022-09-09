@@ -17,6 +17,7 @@ import {
   retrieveItem,
   runChoice,
   runCombat,
+  setAutoAttack,
   toEffect,
   writeCcs,
 } from "kolmafia";
@@ -252,10 +253,11 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   /**
    * Save the combat macro for this task.
    * @param task The current executing task.
-   * @param combat The completed combat strategy far for the task.
-   * @param resources The combat resources assigned for the task.
+   * @param task_combat The completed combat strategy far for the task.
+   * @param task_resources The combat resources assigned for the task.
    */
   setCombat(task: T, task_combat: CombatStrategy<A>, task_resources: CombatResources<A>): void {
+    // Save regular combat macro
     const macro = task_combat.compile(
       task_resources,
       this.options?.combat_defaults,
@@ -268,6 +270,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
     }
     logprint(`Macro: ${macro.toString()}`);
+
+    // Save autoattack combat macro
+    const autoattack = task_combat.compileAutoattack();
+    if (autoattack.toString().length > 1) {
+      logprint(`Autoattack macro: ${autoattack.toString()}`);
+      autoattack.setAutoAttack();
+    } else {
+      setAutoAttack(0);
+    }
   }
 
   /**

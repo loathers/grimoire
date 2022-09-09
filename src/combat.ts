@@ -44,11 +44,17 @@ function undelay(macro: DelayedMacro): Macro {
  * 3. The general macro(s) from .macro().
  * 4. The monster-specific action from .action().
  * 5. The general action from .action().
+ *
+ * If an autoattack is set with .autoattack(), the order of the autoattack is:
+ * 1. The monster-specific macro(s) from .autoattack().
+ * 2. The general macro(s) from .autoattack().
  */
 export class CombatStrategy<A extends string = never> {
   private starting_macro?: DelayedMacro[];
   private default_macro?: DelayedMacro[];
   private macros: Map<Monster, DelayedMacro[]> = new Map();
+  private default_autoattack?: DelayedMacro[];
+  private autoattacks: Map<Monster, DelayedMacro[]> = new Map();
   private default_action?: A;
   private actions: Map<Monster, A> = new Map();
 
@@ -74,6 +80,33 @@ export class CombatStrategy<A extends string = never> {
         if (!this.macros.has(monster)) this.macros.set(monster, []);
         if (prepend) this.macros.get(monster)?.unshift(macro);
         else this.macros.get(monster)?.push(macro);
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Add a macro to perform as an autoattack for this monster. If multiple
+   * macros are given for the same monster, they are concatinated.
+   *
+   * @param macro The macro to perform as autoattack.
+   * @param monsters Which monsters to use the macro on. If not given, add the
+   *  macro as a general macro.
+   * @param prepend If true, add the macro before all previous autoattack
+   *    macros for the same monster. If false, add after all previous macros.
+   * @returns this
+   */
+  public autoattack(macro: DelayedMacro, monsters?: Monster[] | Monster, prepend?: boolean): this {
+    if (monsters === undefined) {
+      if (this.default_autoattack === undefined) this.default_autoattack = [];
+      if (prepend) this.default_autoattack.unshift(macro);
+      else this.default_autoattack.push(macro);
+    } else {
+      if (monsters instanceof Monster) monsters = [monsters];
+      for (const monster of monsters) {
+        if (!this.autoattacks.has(monster)) this.autoattacks.set(monster, []);
+        if (prepend) this.autoattacks.get(monster)?.unshift(macro);
+        else this.autoattacks.get(monster)?.push(macro);
       }
     }
     return this;
@@ -151,9 +184,11 @@ export class CombatStrategy<A extends string = never> {
   public clone(): CombatStrategy<A> {
     const result = new CombatStrategy<A>();
     if (this.starting_macro) result.starting_macro = [...this.starting_macro];
-    result.default_action = this.default_action;
     if (this.default_macro) result.default_macro = [...this.default_macro];
     for (const pair of this.macros) result.macros.set(pair[0], [...pair[1]]);
+    if (this.default_autoattack) result.default_autoattack = [...this.default_autoattack];
+    for (const pair of this.autoattacks) result.autoattacks.set(pair[0], [...pair[1]]);
+    result.default_action = this.default_action;
     for (const pair of this.actions) result.actions.set(pair[0], pair[1]);
     return result;
   }
@@ -202,6 +237,27 @@ export class CombatStrategy<A extends string = never> {
         resources.getMacro(this.default_action) ?? defaults?.[this.default_action]?.(location);
       if (macro) result.step(macro);
     }
+    return result;
+  }
+
+  /**
+   * Compile the autoattack of this combat strategy into a complete macro.
+   *
+   * @returns The compiled autoattack macro.
+   */
+  public compileAutoattack(): Macro {
+    const result = new Macro();
+
+    // Perform any monster-specific autoattacks (these may or may not end the fight)
+    const monster_macros = new CompressedMacro();
+    this.autoattacks.forEach((value, key) => {
+      monster_macros.add(key, new Macro().step(...value.map(undelay)));
+    });
+    result.step(monster_macros.compile());
+
+    // Perform the non-monster specific macro
+    if (this.default_autoattack) result.step(...this.default_autoattack.map(undelay));
+
     return result;
   }
 
