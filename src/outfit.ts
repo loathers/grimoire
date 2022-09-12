@@ -194,8 +194,9 @@ export class Outfit {
     const accessorySlots = $slots`acc1, acc2, acc3`;
     for (const slot of $slots`weapon, off-hand, hat, shirt, pants, familiar, buddy-bjorn, crown-of-thrones, back`) {
       if (
-        targetEquipment.includes(equippedItem(slot)) &&
-        this.equips.get(slot) !== equippedItem(slot)
+        (targetEquipment.includes(equippedItem(slot)) &&
+          this.equips.get(slot) !== equippedItem(slot)) ||
+        this.avoid.includes(equippedItem(slot))
       )
         equip(slot, $item.none);
     }
