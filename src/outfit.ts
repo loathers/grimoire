@@ -29,14 +29,13 @@ const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
-  accessories: Item[] = [];
   skipDefaults = false;
   familiar?: Familiar;
   modifier = "";
   avoid: Item[] = [];
 
   private countEquipped(item: Item): number {
-    return [...this.equips.values(), ...this.accessories].filter((i) => i === item).length;
+    return [...this.equips.values()].filter((i) => i === item).length;
   }
 
   private isAvailable(item: Item): boolean {
@@ -48,7 +47,6 @@ export class Outfit {
 
   private haveEquipped(item: Item, slot?: Slot): boolean {
     if (slot === undefined) return this.countEquipped(item) > 0;
-    if ($slots`acc1, acc2, acc3`.includes(slot)) return this.accessories.includes(item); // TODO handle equipping multiple of an accessory
     return this.equips.get(slot) === item;
   }
 
@@ -81,9 +79,16 @@ export class Outfit {
   private equipAccessory(item: Item, slot?: Slot): boolean {
     if (![undefined, ...$slots`acc1, acc2, acc3`].includes(slot)) return false;
     if (toSlot(item) !== $slot`acc1`) return false;
-    if (this.accessories.length >= 3) return false;
     if (!canEquip(item)) return false;
-    this.accessories.push(item);
+    if (slot === undefined) {
+      // We don't care which of the accessory slots we equip in
+      const empty = $slots`acc1, acc2, acc3`.find((s) => !this.equips.has(s));
+      if (empty === undefined) return false;
+      this.equips.set(empty, item);
+    } else {
+      if (this.equips.has(slot)) return false;
+      this.equips.set(slot, item);
+    }
     return true;
   }
 
@@ -225,8 +230,10 @@ export class Outfit {
   dress(extraOptions?: Partial<MaximizeOptions>): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
+    //Order is anchored here to prevent DFSS shenanigans
+    const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar, buddy-bjorn, crown-of-thrones`;
     const accessorySlots = $slots`acc1, acc2, acc3`;
-    for (const slot of $slots`weapon, off-hand, hat, shirt, pants, familiar, buddy-bjorn, crown-of-thrones, back`) {
+    for (const slot of nonaccessorySlots) {
       if (
         (targetEquipment.includes(equippedItem(slot)) &&
           this.equips.get(slot) !== equippedItem(slot)) ||
@@ -235,14 +242,17 @@ export class Outfit {
         equip(slot, $item.none);
     }
 
-    //Order is anchored here to prevent DFSS shenanigans
-    for (const slot of $slots`weapon, off-hand, hat, back, shirt, pants, familiar, buddy-bjorn, crown-of-thrones`) {
+    for (const slot of nonaccessorySlots) {
       const equipment = this.equips.get(slot);
       if (equipment) equip(slot, equipment);
     }
 
-    //We don't care what order accessories are equipped in, just that they're equipped
-    const accessoryEquips = this.accessories;
+    // Since KoL doesn't care what order accessories are equipped in,
+    // we forget the requested accessory slots and ensure all accessories
+    // are equipped somewhere.
+    const accessoryEquips = $slots`acc1, acc2, acc3`
+      .map((slot) => this.equips.get(slot))
+      .filter((item) => item !== undefined) as Item[];
     for (const slot of accessorySlots) {
       const toEquip = accessoryEquips.find(
         (equip) =>
@@ -279,13 +289,13 @@ export class Outfit {
     // Verify that all equipment was indeed equipped
     if (this.familiar !== undefined && myFamiliar() !== this.familiar)
       throw `Failed to fully dress (expected: familiar ${this.familiar})`;
-    for (const slotted_item of this.equips) {
-      if (equippedItem(slotted_item[0]) !== slotted_item[1]) {
-        throw `Failed to fully dress (expected: ${slotted_item[0]} ${slotted_item[1]})`;
+    for (const slot of nonaccessorySlots) {
+      if (this.equips.has(slot) && equippedItem(slot) !== this.equips.get(slot)) {
+        throw `Failed to fully dress (expected: ${slot} ${this.equips.get(slot)})`;
       }
     }
-    for (const accessory of this.accessories) {
-      if (!$slots`acc1, acc2, acc3`.some((slot) => equippedItem(slot) === accessory)) {
+    for (const accessory of accessoryEquips) {
+      if (equippedAmount(accessory) < accessoryEquips.filter((acc) => acc === accessory).length) {
         throw `Failed to fully dress (expected: acc ${accessory})`;
       }
     }
@@ -294,7 +304,6 @@ export class Outfit {
   clone(): Outfit {
     const result = new Outfit();
     result.equips = new Map(this.equips);
-    result.accessories = [...this.accessories];
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
     result.modifier = this.modifier;
