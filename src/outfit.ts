@@ -122,9 +122,9 @@ export class Outfit {
     return true;
   }
 
-  private equipItem(item: Item, slot?: Slot): boolean {
+  private equipItem(item: Item, slot: Slot | undefined, duplicate: boolean): boolean {
     return (
-      this.haveEquipped(item, slot) ||
+      (!duplicate && this.haveEquipped(item, slot)) ||
       this.equipItemNone(item, slot) ||
       (this.isAvailable(item) &&
         (this.equipNonAccessory(item, slot) ||
@@ -156,7 +156,7 @@ export class Outfit {
       if (itemOrItems !== undefined && !this.equip(itemOrItems, slot)) succeeded = false;
     }
     for (const item of spec?.equip ?? []) {
-      if (!this.equip(item)) succeeded = false;
+      if (!this.equipItem(item, undefined, false)) succeeded = false;
     }
     if (spec?.familiar !== undefined) {
       if (!this.equip(spec.familiar)) succeeded = false;
@@ -169,16 +169,50 @@ export class Outfit {
     return succeeded;
   }
 
+  /**
+   * Equip a thing to the outfit.
+   *
+   * If a slot is given, the item will be equipped in that slot. If no slot
+   * is given, then the item will be equipped wherever possible (possibly using
+   * dual-wielding, or as familiar equipment).
+   *
+   * If the thing is already equipped in the provided slot, or if no slot is
+   * given and the thing is already equipped in any slot, this function will
+   * return true and not change the outfit.
+   *
+   * @param thing The thing or things to equip.
+   * @param slot The slot to equip them.
+   * @returns True if the thing was sucessfully equipped, and false otherwise.
+   */
   equip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
     if (Array.isArray(thing)) {
       if (slot !== undefined) return thing.some((val) => this.equip(val, slot));
       return thing.every((val) => this.equip(val));
     }
-    if (thing instanceof Item) return this.equipItem(thing, slot);
+    if (thing instanceof Item) return this.equipItem(thing, slot, false);
     if (thing instanceof Familiar) return this.equipFamiliar(thing);
     return this.equipSpec(thing);
   }
 
+  /**
+   * Equip a thing to the outfit, even if it is already equipped.
+   *
+   * @param thing The thing or things to equip.
+   * @returns True if the thing was sucessfully equipped, and false otherwise.
+   */
+  equipDuplicate(thing: Item | Item[]): boolean {
+    if (Array.isArray(thing)) {
+      return thing.every((val) => this.equipDuplicate(val));
+    }
+    return this.equipItem(thing, undefined, true);
+  }
+
+  /**
+   * Check if it is possible to equip a thing to this outfit using .equip().
+   *
+   * @param thing The thing to equip.
+   * @returns True if this thing can be equipped.
+   */
   canEquip(thing: Item | Familiar | OutfitSpec | Item[]): boolean {
     const outfit = this.clone();
     return outfit.equip(thing);
