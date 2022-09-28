@@ -161,7 +161,7 @@ export class Outfit {
       if (itemOrItems !== undefined && !this.equip(itemOrItems, slot)) succeeded = false;
     }
     for (const item of spec?.equip ?? []) {
-      if (!this.equipItem(item)) succeeded = false;
+      if (!this.equip(item)) succeeded = false;
     }
     if (spec?.familiar !== undefined) {
       if (!this.equip(spec.familiar)) succeeded = false;
