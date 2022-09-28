@@ -288,7 +288,6 @@ export class Outfit {
       const allRequirements = [
         new Requirement([this.modifier], {
           preventSlot: [...usedSlots],
-          forceEquip: accessoryEquips,
           preventEquip: this.avoid,
         }),
       ];
