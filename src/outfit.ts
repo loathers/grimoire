@@ -259,7 +259,7 @@ export class Outfit {
     // To plan how to equip accessories, first check which accessories are
     // already equipped in some accessory slot. There is no need to move them,
     // since KoL doesn't care what order accessories are equipped in.
-    const missingAccessories = [];
+    const missingAccessories = []; // accessories that are not already equipped
     for (const accessory of accessoryEquips) {
       const alreadyEquipped = accessorySlots.find(
         (slot) => !usedSlots.has(slot) && equippedItem(slot) === accessory
