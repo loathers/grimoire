@@ -230,9 +230,14 @@ export class Outfit {
   dress(extraOptions?: Partial<MaximizeOptions>): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
-    //Order is anchored here to prevent DFSS shenanigans
+    const usedSlots = new Set<Slot>();
+
+    // First, we equip non-accessory equipment.
     const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar, buddy-bjorn, crown-of-thrones`;
-    const accessorySlots = $slots`acc1, acc2, acc3`;
+
+    // We must manually remove equipment that we want to use in a different
+    // slot than where it is currently equipped, to avoid a mafia issue.
+    // Order is anchored here to prevent DFSS shenanigans
     for (const slot of nonaccessorySlots) {
       if (
         (targetEquipment.includes(equippedItem(slot)) &&
@@ -242,38 +247,53 @@ export class Outfit {
         equip(slot, $item.none);
     }
 
+    // Then we equip all the non-accessory equipment.
     for (const slot of nonaccessorySlots) {
       const equipment = this.equips.get(slot);
-      if (equipment) equip(slot, equipment);
-    }
-
-    // Since KoL doesn't care what order accessories are equipped in,
-    // we forget the requested accessory slots and ensure all accessories
-    // are equipped somewhere.
-    const accessoryEquips = $slots`acc1, acc2, acc3`
-      .map((slot) => this.equips.get(slot))
-      .filter((item) => item !== undefined) as Item[];
-    for (const slot of accessorySlots) {
-      const toEquip = accessoryEquips.find(
-        (equip) =>
-          equippedAmount(equip) < accessoryEquips.filter((accessory) => accessory === equip).length
-      );
-      if (!toEquip) break;
-      const currentEquip = equippedItem(slot);
-      //We never want an empty accessory slot
-      if (
-        currentEquip === $item.none ||
-        equippedAmount(currentEquip) >
-          accessoryEquips.filter((accessory) => accessory === currentEquip).length
-      ) {
-        equip(slot, toEquip);
+      if (equipment) {
+        equip(slot, equipment);
+        usedSlots.add(slot);
       }
     }
 
+    // Next, we equip accessories
+    const accessorySlots = $slots`acc1, acc2, acc3`;
+    const accessoryEquips = accessorySlots
+      .map((slot) => this.equips.get(slot))
+      .filter((item) => item !== undefined) as Item[];
+
+    // To plan how to equip accessories, first check which accessories are
+    // already equipped in some accessory slot. There is no need to move them,
+    // since KoL doesn't care what order accessories are equipped in.
+    const missingAccessories = [];
+    for (const accessory of accessoryEquips) {
+      const alreadyEquipped = accessorySlots.find(
+        (slot) => !usedSlots.has(slot) && equippedItem(slot) === accessory
+      );
+      if (alreadyEquipped) {
+        usedSlots.add(alreadyEquipped);
+      } else {
+        missingAccessories.push(accessory);
+      }
+    }
+
+    // Then, for all accessories that are not currently equipped, use the first
+    // open slot to place them.
+    for (const accessory of missingAccessories) {
+      const unusedSlot = accessorySlots.find((slot) => !usedSlots.has(slot));
+      if (unusedSlot === undefined) {
+        // This should only occur if there is a bug in .dress()
+        throw `No accessory slots remaining`;
+      }
+      equip(unusedSlot, accessory);
+      usedSlots.add(unusedSlot);
+    }
+
+    // Remaining slots are filled by the maximizer
     if (this.modifier) {
       const allRequirements = [
         new Requirement([this.modifier], {
-          preventSlot: [...this.equips.keys()],
+          preventSlot: [...usedSlots],
           forceEquip: accessoryEquips,
           preventEquip: this.avoid,
         }),
