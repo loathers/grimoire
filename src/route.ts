@@ -1,5 +1,21 @@
 import { Quest, Task } from "./task";
 
+/**
+ * Extract a list of tasks from the provided quests.
+ *
+ * Each task name is prepended with the quest name ("Quest Name/Task Name").
+ * The quest-local names referred to in task.after are updated appropriately.
+ * The task completion condition is updated to include the quest completion.
+ *
+ * Tasks are returned in-order: all tasks from the first quest, then all tasks
+ * from the second quest, etc.
+ *
+ * @param quests The list of quests. This method does not modify the quest
+ *    objects or their tasks.
+ * @param implicitAfter If true, each task with task.after = undefined will
+ *    have a dependency added on the previous task in the list.
+ * @returns A list of tasks from the input quests (with updated properties).
+ */
 export function getTasks<A extends string, T extends Task<A> = Task<A>>(
   quests: Quest<T>[],
   implicitAfter = false
@@ -9,19 +25,20 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
     const questCompleted = quest.completed;
     for (const task of quest.tasks) {
       // Include quest name in task names and dependencies (unless dependency quest is given)
-      task.name = `${quest.name}/${task.name}`;
-      task.after = task.after?.map((after) =>
+      const renamedTask = { ...task };
+      renamedTask.name = `${quest.name}/${task.name}`;
+      renamedTask.after = task.after?.map((after) =>
         after.includes("/") ? after : `${quest.name}/${after}`
       );
       // Include previous task as a dependency
       if (implicitAfter && task.after === undefined && result.length > 0)
-        task.after = [result[result.length - 1].name];
+        renamedTask.after = [result[result.length - 1].name];
       // Include quest completion in task completion
       if (questCompleted !== undefined) {
         const taskCompleted = task.completed;
-        task.completed = () => questCompleted() || taskCompleted();
+        renamedTask.completed = () => questCompleted() || taskCompleted();
       }
-      result.push(task);
+      result.push(renamedTask);
     }
   }
 
