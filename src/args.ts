@@ -145,29 +145,35 @@ export class Args {
       help: this.flag({ help: "Show this message and exit.", setting: "" }),
     };
 
-    const res: { [key: string]: unknown } & ArgMetadata<T> = {
+    const metadata: { [key: string]: unknown } & ArgMetadata<T> = {
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
     };
 
+    // This type is actually incorrect here, since we have not actually set any
+    // of the default value for the args. But lying about this type is the
+    // easiest way to actually set the default values.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res: ParsedArgs<T> & { help: boolean } = metadata as any;
+
     // Fill the default values for each argument.
-    for (const k in argsWithHelp) {
-      const v = argsWithHelp[k];
-      if ("default" in v) res[k] = v["default"];
-      else res[k] = undefined;
-    }
+    traverseAndSet(argsWithHelp, res, (keySpec) => {
+      if ("default" in keySpec) return keySpec["default"];
+      else return undefined;
+    });
+    // The type of res is now actually correct.
 
     // Parse values from settings.
-    for (const k in argsWithHelp) {
-      const setting = argsWithHelp[k].setting ?? `${scriptName}_${argsWithHelp[k].key ?? k}`;
-      if (setting === "") continue; // no setting
+    traverseAndMaybeSet(argsWithHelp, res, (keySpec, key) => {
+      const setting = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
+      if (setting === "") return undefined; // no setting
       const value_str = get(setting, "");
-      if (value_str === "") continue;
-      res[k] = parseAndValidate(argsWithHelp[k], `Setting ${setting}`, value_str);
-    }
+      if (value_str === "") return undefined; // no setting
+      return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
+    });
 
-    return res as ParsedArgs<T> & { help: boolean };
+    return res;
   }
 
   /**
@@ -181,20 +187,19 @@ export class Args {
     const spec = args[specSymbol];
     const keys = new Set<string>();
     const flags = new Set<string>();
-    for (const k in spec) {
-      if (spec[k].valueHelpName === "FLAG") flags.add(spec[k].key ?? k);
-      else keys.add(spec[k].key ?? k);
-    }
+    traverse(spec, (keySpec, key) => {
+      if (keySpec.valueHelpName === "FLAG") flags.add(keySpec.key ?? key);
+      else keys.add(keySpec.key ?? key);
+    });
 
     // Parse new argments from the command line
     const parsed = new CommandParser(command, keys, flags).parse();
-    for (const k in spec) {
-      const key = spec[k].key ?? k;
-      const value_str = parsed.get(key);
-      if (value_str === undefined) continue;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      args[k] = parseAndValidate(spec[k], `Argument ${key}`, value_str) as any;
-    }
+    traverseAndMaybeSet(spec, args, (keySpec, key) => {
+      const argKey = keySpec.key ?? key;
+      const value_str = parsed.get(argKey);
+      if (value_str === undefined) return undefined; // no setting
+      return parseAndValidate(keySpec, `Argument ${argKey}`, value_str);
+    });
   }
 
   /**
@@ -227,11 +232,10 @@ export class Args {
 
     printHtml(`${scriptHelp}`);
     printHtml(`<font color='blue'><b>Options:</b></font>`);
-    for (const k in spec) {
-      const arg = spec[k];
-      if (arg.hidden) continue;
+    traverse(spec, (arg, key) => {
+      if (arg.hidden) return;
 
-      const nameText = `<font color='blue'>${arg.key ?? k}</font>`;
+      const nameText = `<font color='blue'>${arg.key ?? key}</font>`;
       const valueText =
         arg.valueHelpName === "FLAG" ? "" : `<font color='purple'>${arg.valueHelpName}</font>`;
       const helpText = arg.help ?? "";
@@ -241,7 +245,7 @@ export class Args {
         arg.setting === ""
           ? ""
           : `<font color='#888888'>[setting: ${
-              arg.setting ?? `${scriptName}_${arg.key ?? k}`
+              arg.setting ?? `${scriptName}_${arg.key ?? key}`
             }]</font>`;
 
       printHtml(
@@ -259,7 +263,7 @@ export class Args {
           }
         }
       }
-    }
+    });
   }
 }
 
@@ -336,6 +340,60 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
     }
   }
   return parsed_value;
+}
+
+/**
+ * Traverse the spec and generate a value for each argument.
+ *
+ * @param spec The spec for all arguments.
+ * @param result The object to hold the resulting argument values.
+ * @param setTo A function to generate an argument value from each arg spec.
+ */
+function traverseAndSet<T extends ArgMap>(
+  spec: T,
+  result: ParsedArgs<T>,
+  setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+) {
+  for (const k in spec) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    result[k] = setTo(spec[k], k) as any;
+  }
+}
+
+/**
+ * Traverse the spec and possibly generate a value for each argument.
+ *
+ * @param spec The spec for all arguments.
+ * @param result The object to hold the resulting argument values.
+ * @param setTo A function to generate an argument value from each arg spec.
+ *    If this function returns undefined, then the argument value is unchanged.
+ */
+function traverseAndMaybeSet<T extends ArgMap>(
+  spec: T,
+  result: ParsedArgs<T>,
+  setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+) {
+  for (const k in spec) {
+    const value = setTo(spec[k], k);
+    if (value === undefined) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    result[k] = value as any;
+  }
+}
+
+/**
+ * Traverse the spec and possibly generate a value for each argument.
+ *
+ * @param spec The spec for all arguments.
+ * @param process A function to call at each arg spec.
+ */
+function traverse<T extends ArgMap>(
+  spec: T,
+  process: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => void
+) {
+  for (const k in spec) {
+    process(spec[k], k);
+  }
 }
 
 /**
