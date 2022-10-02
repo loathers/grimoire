@@ -152,7 +152,7 @@ export class Args {
     scriptName: string,
     scriptHelp: string,
     args: T
-  ): ParsedArgs<T> & { help: boolean } {
+  ): ParsedArgs<T & { help: ArgSpecNoDefault<boolean> }> {
     traverse(args, (keySpec, key) => {
       if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
     });
@@ -164,12 +164,12 @@ export class Args {
 
     // Create an object to hold argument results, with a default value for
     // each argument.
-    const res: ParsedArgs<T> & { help: boolean } = {
+    const res: ParsedArgs<T & { help: ArgSpecNoDefault<boolean> }> = {
       ...loadDefaultValues(argsWithHelp),
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
-    } as any;
+    };
 
     // Parse values from settings.
     traverseAndMaybeSet(argsWithHelp, res, (keySpec, key) => {
@@ -192,6 +192,8 @@ export class Args {
     if (command === undefined || command === "") return;
 
     const spec = args[specSymbol];
+
+    // Load the list of keys and flags from the arg spec
     const keys = new Set<string>();
     const flags = new Set<string>();
     traverse(spec, (keySpec, key) => {
