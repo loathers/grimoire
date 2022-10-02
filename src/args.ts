@@ -202,8 +202,10 @@ export class Args {
     const keys = new Set<string>();
     const flags = new Set<string>();
     traverse(spec, (keySpec, key) => {
-      if (keySpec.valueHelpName === "FLAG") flags.add(keySpec.key ?? key);
-      else keys.add(keySpec.key ?? key);
+      const name = keySpec.key ?? key;
+      if (flags.has(name) || keys.has(name)) throw `Duplicate arg key ${name} is not allowed`;
+      if (keySpec.valueHelpName === "FLAG") flags.add(name);
+      else keys.add(name);
     });
 
     // Parse new argments from the command line
