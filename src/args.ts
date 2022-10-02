@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { printHtml } from "kolmafia";
 import { get } from "libram";
 
@@ -123,51 +124,68 @@ export class Args {
   }
 
   /**
+   * Create a group of arguments that will be printed separately in the help.
+   *
+   * Note that keys in the group must still be globally distinct.
+   *
+   * @param groupName The display name for the group in help.
+   * @param args A JS object specifying the script arguments. Its values should
+   *    be {@link Arg} objects (created by Args.string, Args.number, or others)
+   *    or groups of arguments (created by Args.group).
+   */
+  static group<T extends ArgMap>(groupName: string, args: T): ArgGroup<T> {
+    return {
+      name: groupName,
+      args: args,
+    };
+  }
+
+  /**
    * Create a set of input arguments for a script.
    * @param scriptName Prefix for property names; often the name of the script.
    * @param scriptHelp Brief description of this script, for the help message.
    * @param args A JS object specifying the script arguments. Its values should
-   *    be {@link Arg} objects (created by Args.string, Args.number, or others).
+   *    be {@link Arg} objects (created by Args.string, Args.number, or others)
+   *    or groups of arguments (created by Args.group).
+   * @param defaultGroupName Header to use for the argument list in the help.
    * @returns An object which can hold parsed argument values. The keys of this
    *    object are identical to the keys in 'args'.
    */
   static create<T extends ArgMap>(
     scriptName: string,
     scriptHelp: string,
-    args: T
+    args: T,
+    defaultGroupName = "Options"
   ): ParsedArgs<T> & { help: boolean } {
-    for (const k in args) {
-      if (k === "help" || args[k].key === "help") throw `help is a reserved argument name`;
-    }
+    traverse(args, (keySpec, key) => {
+      if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
+    });
 
     const argsWithHelp = {
       ...args,
       help: this.flag({ help: "Show this message and exit.", setting: "" }),
     };
 
-    const res: { [key: string]: unknown } & ArgMetadata<T> = {
+    // Create an object to hold argument results, with a default value for
+    // each argument.
+    const res: ParsedArgs<T> & { help: boolean } = {
+      ...loadDefaultValues(argsWithHelp),
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
-    };
-
-    // Fill the default values for each argument.
-    for (const k in argsWithHelp) {
-      const v = argsWithHelp[k];
-      if ("default" in v) res[k] = v["default"];
-      else res[k] = undefined;
-    }
+      [defaultGroupNameSymbol]: defaultGroupName,
+    } as any;
 
     // Parse values from settings.
-    for (const k in argsWithHelp) {
-      const setting = argsWithHelp[k].setting ?? `${scriptName}_${argsWithHelp[k].key ?? k}`;
-      if (setting === "") continue; // no setting
+    traverseAndMaybeSet(argsWithHelp, res, (keySpec, key) => {
+      const setting = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
+      if (setting === "") return undefined; // no setting
       const value_str = get(setting, "");
-      if (value_str === "") continue;
-      res[k] = parseAndValidate(argsWithHelp[k], `Setting ${setting}`, value_str);
-    }
+      if (value_str === "") return undefined; // no setting
+      return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
+    });
 
-    return res as ParsedArgs<T> & { help: boolean };
+    return res;
   }
 
   /**
@@ -179,22 +197,25 @@ export class Args {
     if (command === undefined || command === "") return;
 
     const spec = args[specSymbol];
+
+    // Load the list of keys and flags from the arg spec
     const keys = new Set<string>();
     const flags = new Set<string>();
-    for (const k in spec) {
-      if (spec[k].valueHelpName === "FLAG") flags.add(spec[k].key ?? k);
-      else keys.add(spec[k].key ?? k);
-    }
+    traverse(spec, (keySpec, key) => {
+      const name = keySpec.key ?? key;
+      if (flags.has(name) || keys.has(name)) throw `Duplicate arg key ${name} is not allowed`;
+      if (keySpec.valueHelpName === "FLAG") flags.add(name);
+      else keys.add(name);
+    });
 
     // Parse new argments from the command line
     const parsed = new CommandParser(command, keys, flags).parse();
-    for (const k in spec) {
-      const key = spec[k].key ?? k;
-      const value_str = parsed.get(key);
-      if (value_str === undefined) continue;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      args[k] = parseAndValidate(spec[k], `Argument ${key}`, value_str) as any;
-    }
+    traverseAndMaybeSet(spec, args, (keySpec, key) => {
+      const argKey = keySpec.key ?? key;
+      const value_str = parsed.get(argKey);
+      if (value_str === undefined) return undefined; // no setting
+      return parseAndValidate(keySpec, `Argument ${argKey}`, value_str);
+    });
   }
 
   /**
@@ -217,6 +238,11 @@ export class Args {
 
   /**
    * Print a description of the script arguments to the CLI.
+   *
+   * First, all top-level argument descriptions are printed in the order they
+   * were defined. Afterwards, descriptions for groups of arguments are printed
+   * in the order they were defined.
+   *
    * @param args An object of parsed arguments, from Args.create(*).
    * @param maxOptionsToDisplay If given, do not list more than this many options for each arg.
    */
@@ -226,42 +252,59 @@ export class Args {
     const scriptHelp = args[scriptHelpSymbol];
 
     printHtml(`${scriptHelp}`);
-    printHtml(`<font color='blue'><b>Options:</b></font>`);
-    for (const k in spec) {
-      const arg = spec[k];
-      if (arg.hidden) continue;
+    printHtml("");
+    printHtml(`<b>${args[defaultGroupNameSymbol]}:</b>`);
+    traverse(
+      spec,
+      (arg, key) => {
+        if (arg.hidden) return;
 
-      const nameText = `<font color='blue'>${arg.key ?? k}</font>`;
-      const valueText =
-        arg.valueHelpName === "FLAG" ? "" : `<font color='purple'>${arg.valueHelpName}</font>`;
-      const helpText = arg.help ?? "";
-      const defaultText =
-        "default" in arg ? `<font color='#888888'>[default: ${arg.default}]</font>` : "";
-      const settingText =
-        arg.setting === ""
-          ? ""
-          : `<font color='#888888'>[setting: ${
-              arg.setting ?? `${scriptName}_${arg.key ?? k}`
-            }]</font>`;
+        const nameText = `<font color='blue'>${arg.key ?? key}</font>`;
+        const valueText =
+          arg.valueHelpName === "FLAG" ? "" : `<font color='purple'>${arg.valueHelpName}</font>`;
+        const helpText = arg.help ?? "";
+        const defaultText =
+          "default" in arg ? `<font color='#888888'>[default: ${arg.default}]</font>` : "";
+        const settingText =
+          arg.setting === ""
+            ? ""
+            : `<font color='#888888'>[setting: ${
+                arg.setting ?? `${scriptName}_${arg.key ?? key}`
+              }]</font>`;
 
-      printHtml(
-        `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`
-      );
-      const valueOptions = arg.options ?? [];
-      if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
-        for (const option of valueOptions) {
-          if (option.length === 1) {
-            printHtml(`&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`);
-          } else {
-            printHtml(
-              `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]} - ${option[1]}`
-            );
+        printHtml(
+          `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`
+        );
+        const valueOptions = arg.options ?? [];
+        if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
+          for (const option of valueOptions) {
+            if (option.length === 1) {
+              printHtml(
+                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`
+              );
+            } else {
+              printHtml(
+                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]} - ${option[1]}`
+              );
+            }
           }
         }
+      },
+      (group) => {
+        printHtml("");
+        printHtml(`<b>${group.name}:</b>`);
       }
-    }
+    );
   }
 }
+
+/**
+ * A group of arguments.
+ */
+type ArgGroup<T extends ArgMap> = {
+  name: string;
+  args: T;
+};
 
 /**
  * A parser that can transform a string value into the desired type.
@@ -292,10 +335,12 @@ type ArgNoDefault<T> = Omit<Arg<T>, "default">;
 const specSymbol: unique symbol = Symbol("spec");
 const scriptSymbol: unique symbol = Symbol("script");
 const scriptHelpSymbol: unique symbol = Symbol("scriptHelp");
+const defaultGroupNameSymbol: unique symbol = Symbol("defaultGroupName");
 type ArgMetadata<T extends ArgMap> = {
   [specSymbol]: T;
   [scriptSymbol]: string;
   [scriptHelpSymbol]: string;
+  [defaultGroupNameSymbol]: string;
 };
 
 /**
@@ -311,13 +356,18 @@ type ArgMetadata<T extends ArgMap> = {
  * Finally, there are hidden keys in ArgMetadata for fill(*) and showHelp(*).
  */
 type ArgMap = {
-  [key: string]: Arg<unknown> | ArgNoDefault<unknown>;
+  [key: string]: Arg<unknown> | ArgNoDefault<unknown> | ArgGroup<ArgMap>;
 };
-type ParsedArgs<T extends ArgMap> = {
-  [k in keyof T]: T[k] extends Arg<unknown>
+type ParsedGroup<T extends ArgMap> = {
+  [k in keyof T]: T[k] extends ArgGroup<any>
+    ? ParsedGroup<T[k]["args"]>
+    : T[k] extends Arg<unknown>
     ? Exclude<ReturnType<T[k]["parser"]>, undefined>
-    : ReturnType<T[k]["parser"]>;
-} & ArgMetadata<T>;
+    : T[k] extends ArgNoDefault<unknown>
+    ? ReturnType<T[k]["parser"]>
+    : never;
+};
+type ParsedArgs<T extends ArgMap> = ParsedGroup<T> & ArgMetadata<T>;
 
 /**
  * Parse a string into a value for a given argument, throwing if the parsing fails.
@@ -336,6 +386,82 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
     }
   }
   return parsed_value;
+}
+
+/**
+ * Create a parsed args object from a spec using all default values.
+ *
+ * @param spec The spec for all arguments.
+ */
+function loadDefaultValues<T extends ArgMap>(spec: T): ParsedGroup<T> {
+  const result: { [key: string]: any } = {};
+  for (const k in spec) {
+    const argSpec = spec[k];
+    if ("args" in argSpec) {
+      result[k] = loadDefaultValues(argSpec.args);
+    } else {
+      if ("default" in argSpec) result[k] = argSpec.default;
+      else result[k] = undefined;
+    }
+  }
+  return result as ParsedGroup<T>;
+}
+
+/**
+ * Traverse the spec and possibly generate a value for each argument.
+ *
+ * @param spec The spec for all arguments.
+ * @param result The object to hold the resulting argument values.
+ * @param setTo A function to generate an argument value from each arg spec.
+ *    If this function returns undefined, then the argument value is unchanged.
+ */
+function traverseAndMaybeSet<T extends ArgMap>(
+  spec: T,
+  result: ParsedArgs<T>,
+  setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+) {
+  const groups: [ArgGroup<ArgMap>, string][] = [];
+  for (const k in spec) {
+    const argSpec = spec[k];
+    if ("args" in argSpec) {
+      groups.push([argSpec, k]);
+    } else {
+      const value = setTo(argSpec, k);
+      if (value === undefined) continue;
+      result[k] = value as any;
+    }
+  }
+
+  for (const group_and_key of groups) {
+    traverseAndMaybeSet(group_and_key[0].args, result[group_and_key[1]] as any, setTo);
+  }
+}
+
+/**
+ * Traverse the spec and possibly generate a value for each argument.
+ *
+ * @param spec The spec for all arguments.
+ * @param process A function to call at each arg spec.
+ */
+function traverse<T extends ArgMap>(
+  spec: T,
+  process: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => void,
+  onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void
+) {
+  const groups: [ArgGroup<ArgMap>, string][] = [];
+  for (const k in spec) {
+    const argSpec = spec[k];
+    if ("args" in argSpec) {
+      groups.push([argSpec, k]);
+    } else {
+      process(argSpec, k);
+    }
+  }
+
+  for (const group_and_key of groups) {
+    onGroup?.(group_and_key[0], group_and_key[1]);
+    traverse(group_and_key[0].args, process);
+  }
 }
 
 /**
