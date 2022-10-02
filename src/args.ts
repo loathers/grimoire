@@ -124,7 +124,9 @@ export class Args {
   }
 
   /**
-   * Create a group of arguments. Note that keys must still be distinct in the group.
+   * Create a group of arguments that will be printed separately in the help.
+   *
+   * Note that keys in the group must still be globally distinct.
    *
    * @param groupName The display name for the group in help.
    * @param args A JS object specifying the script arguments. Its values should
