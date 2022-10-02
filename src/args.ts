@@ -153,7 +153,8 @@ export class Args {
   static create<T extends ArgMap>(
     scriptName: string,
     scriptHelp: string,
-    args: T
+    args: T,
+    defaultGroupName = "Options"
   ): ParsedArgs<T> & { help: boolean } {
     traverse(args, (keySpec, key) => {
       if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
@@ -171,6 +172,7 @@ export class Args {
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
+      [defaultGroupNameSymbol]: defaultGroupName,
     } as any;
 
     // Parse values from settings.
@@ -247,7 +249,8 @@ export class Args {
     const scriptHelp = args[scriptHelpSymbol];
 
     printHtml(`${scriptHelp}`);
-    printHtml(`<font color='blue'><b>Options:</b></font>`);
+    printHtml("");
+    printHtml(`<b>${args[defaultGroupNameSymbol]}:</b>`);
     traverse(
       spec,
       (arg, key) => {
@@ -286,7 +289,7 @@ export class Args {
       },
       (group) => {
         printHtml("");
-        printHtml(`<font color='blue'><b>${group.name}:</b></font>`);
+        printHtml(`<b>${group.name}:</b>`);
       }
     );
   }
@@ -329,10 +332,12 @@ type ArgNoDefault<T> = Omit<Arg<T>, "default">;
 const specSymbol: unique symbol = Symbol("spec");
 const scriptSymbol: unique symbol = Symbol("script");
 const scriptHelpSymbol: unique symbol = Symbol("scriptHelp");
+const defaultGroupNameSymbol: unique symbol = Symbol("defaultGroupName");
 type ArgMetadata<T extends ArgMap> = {
   [specSymbol]: T;
   [scriptSymbol]: string;
   [scriptHelpSymbol]: string;
+  [defaultGroupNameSymbol]: string;
 };
 
 /**
