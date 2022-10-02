@@ -147,6 +147,7 @@ export class Args {
    * @param args A JS object specifying the script arguments. Its values should
    *    be {@link Arg} objects (created by Args.string, Args.number, or others)
    *    or groups of arguments (created by Args.group).
+   * @param defaultGroupName Header to use for the argument list in the help.
    * @returns An object which can hold parsed argument values. The keys of this
    *    object are identical to the keys in 'args'.
    */
