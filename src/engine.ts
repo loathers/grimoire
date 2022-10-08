@@ -18,6 +18,7 @@ import {
   runChoice,
   runCombat,
   setAutoAttack,
+  setLocation,
   toEffect,
   writeCcs,
 } from "kolmafia";
@@ -208,6 +209,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param outfit The outfit for the task, possibly augmented by the engine.
    */
   dress(task: T, outfit: Outfit): void {
+    if (task.do instanceof Location) setLocation(task.do);
     outfit.dress();
   }
 
