@@ -1,6 +1,6 @@
 {
   "name": "grimoire-kolmafia",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
