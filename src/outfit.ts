@@ -23,36 +23,33 @@ import {
   MaximizeOptions,
   Requirement,
 } from "libram";
-
-export const outfitSlots = [
-  "hat",
-  "back",
-  "weapon",
-  "offhand",
-  "shirt",
-  "pants",
-  "acc1",
-  "acc2",
-  "acc3",
-  "famequip",
-] as const;
-
-export type OutfitSlot = typeof outfitSlots[number];
-
-export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
-
-export interface OutfitSpec extends OutfitEquips {
-  equip?: Item[]; // Items to be equipped in any slot
-  modifier?: string; // Modifier to maximize
-  familiar?: Familiar; // Familiar to use
-  avoid?: Item[]; // Items that cause issues and so should not be equipped
-  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
-}
+import { Modes, outfitSlots, OutfitSpec } from "./task";
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
+const modeableCommands = [
+  "backupcamera",
+  "umbrella",
+  "snowsuit",
+  "edpiece",
+  "retrocape",
+  "parka",
+] as const;
+type Mode = typeof modeableCommands[number];
+
+const modeables: Record<Mode, Item> = {
+  backupcamera: $item`backup camera`,
+  umbrella: $item`unbreakable umbrella`,
+  snowsuit: $item`Snow Suit`,
+  edpiece: $item`The Crown of Ed the Undying`,
+  retrocape: $item`unwrapped knock-off retro superhero cape`,
+  // eslint-disable-next-line libram/verify-constants
+  parka: $item`Jurassic Parka`,
+} as const;
+
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
+  modes: Modes = {};
   skipDefaults = false;
   familiar?: Familiar;
   modifier = "";
@@ -226,6 +223,21 @@ export class Outfit {
     if (thing instanceof Familiar) return this.equipFamiliar(thing);
     if (thing instanceof Outfit) return this.equipSpec(thing.spec());
     return this.equipSpec(thing);
+  }
+
+  addModes(modes: Modes): boolean {
+    let compatible = false;
+    for (const mode of modeableCommands) {
+      if (this.modes[mode] !== undefined && this.modes[mode] !== modes[mode]) {
+        compatible = false;
+      }
+    }
+
+    this.modes = {
+      ...modes,
+      ...this.modes,
+    };
+    return compatible;
   }
 
   /**
