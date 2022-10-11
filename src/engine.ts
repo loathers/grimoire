@@ -171,7 +171,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   acquireEffects(task: T): void {
-    const songs = task.effects?.filter((effect) => isSong(effect)) ?? [];
+    const effects = typeof task.effects === "function" ? task.effects() : task.effects ?? [];
+    const songs = effects.filter((effect) => isSong(effect));
     if (songs.length > maxSongs()) throw "Too many AT songs";
     const extraSongs = Object.keys(myEffects())
       .map((effectName) => toEffect(effectName))
@@ -185,7 +186,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       }
     }
 
-    for (const effect of task.effects ?? []) ensureEffect(effect);
+    for (const effect of effects) ensureEffect(effect);
   }
 
   /**
