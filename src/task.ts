@@ -60,7 +60,7 @@ export type Task<A extends string = never> = {
   post?: () => void;
 
   acquire?: AcquireItem[] | (() => AcquireItem[]);
-  effects?: Effect[];
+  effects?: Effect[] | (() => Effect[]);
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
   outfit?: OutfitSpec | (() => OutfitSpec);
