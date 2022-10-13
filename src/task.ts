@@ -3,7 +3,7 @@ import { get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
-import { OutfitSpec } from "./outfit";
+import { Outfit, OutfitSpec } from "./outfit";
 
 export type Quest<T> = {
   name: string;
@@ -40,7 +40,7 @@ export type Task<A extends string = never> = {
   effects?: Effect[] | (() => Effect[]);
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
-  outfit?: OutfitSpec | (() => OutfitSpec);
+  outfit?: OutfitSpec | Outfit | (() => OutfitSpec | Outfit);
   combat?: CombatStrategy<A>;
 };
 
