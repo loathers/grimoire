@@ -1,39 +1,15 @@
-import { Effect, Familiar, Item, Location } from "kolmafia";
+import { Effect, Item, Location } from "kolmafia";
 import { get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
+import { Outfit, OutfitSpec } from "./outfit";
 
 export type Quest<T> = {
   name: string;
   completed?: () => boolean;
   tasks: T[];
 };
-
-export const outfitSlots = [
-  "hat",
-  "back",
-  "weapon",
-  "offhand",
-  "shirt",
-  "pants",
-  "acc1",
-  "acc2",
-  "acc3",
-  "famequip",
-] as const;
-
-export type OutfitSlot = typeof outfitSlots[number];
-
-export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
-
-export interface OutfitSpec extends OutfitEquips {
-  equip?: Item[]; // Items to be equipped in any slot
-  modifier?: string; // Modifier to maximize
-  familiar?: Familiar; // Familiar to use
-  avoid?: Item[]; // Items that cause issues and so should not be equipped
-  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
-}
 
 export type AcquireItem = {
   item: Item;
@@ -64,7 +40,7 @@ export type Task<A extends string = never> = {
   effects?: Effect[] | (() => Effect[]);
   choices?: { [id: number]: number | (() => number) };
   limit?: Limit;
-  outfit?: OutfitSpec | (() => OutfitSpec);
+  outfit?: OutfitSpec | Outfit | (() => OutfitSpec | Outfit);
   combat?: CombatStrategy<A>;
 };
 

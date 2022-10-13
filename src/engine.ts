@@ -198,6 +198,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    */
   createOutfit(task: T): Outfit {
     const spec = typeof task.outfit === "function" ? task.outfit() : task.outfit;
+    if (spec instanceof Outfit) return spec.clone();
+
     const outfit = new Outfit();
     if (spec !== undefined) {
       if (!outfit.equip(spec)) {

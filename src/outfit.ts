@@ -23,7 +23,31 @@ import {
   MaximizeOptions,
   Requirement,
 } from "libram";
-import { outfitSlots, OutfitSpec } from "./task";
+
+export const outfitSlots = [
+  "hat",
+  "back",
+  "weapon",
+  "offhand",
+  "shirt",
+  "pants",
+  "acc1",
+  "acc2",
+  "acc3",
+  "famequip",
+] as const;
+
+export type OutfitSlot = typeof outfitSlots[number];
+
+export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
+
+export interface OutfitSpec extends OutfitEquips {
+  equip?: Item[]; // Items to be equipped in any slot
+  modifier?: string; // Modifier to maximize
+  familiar?: Familiar; // Familiar to use
+  avoid?: Item[]; // Items that cause issues and so should not be equipped
+  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
+}
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
@@ -193,13 +217,14 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, and false otherwise.
    */
-  equip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+  equip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
     if (Array.isArray(thing)) {
       if (slot !== undefined) return thing.some((val) => this.equip(val, slot));
       return thing.every((val) => this.equip(val));
     }
     if (thing instanceof Item) return this.equipItem(thing, slot);
     if (thing instanceof Familiar) return this.equipFamiliar(thing);
+    if (thing instanceof Outfit) return this.equipSpec(thing.spec());
     return this.equipSpec(thing);
   }
 
@@ -212,7 +237,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if this thing can be equipped.
    */
-  canEquip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+  canEquip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
     const outfit = this.clone();
     return outfit.equip(thing, slot);
   }
@@ -314,6 +339,9 @@ export class Outfit {
     }
   }
 
+  /**
+   * Build an Outfit identical to this outfit.
+   */
   clone(): Outfit {
     const result = new Outfit();
     result.equips = new Map(this.equips);
@@ -321,6 +349,29 @@ export class Outfit {
     result.familiar = this.familiar;
     result.modifier = this.modifier;
     result.avoid = [...this.avoid];
+    return result;
+  }
+
+  /**
+   * Build an OutfitSpec identical to this outfit.
+   */
+  spec(): OutfitSpec {
+    const result: OutfitSpec = {
+      modifier: this.modifier,
+      familiar: this.familiar,
+      avoid: [...this.avoid],
+      skipDefaults: this.skipDefaults,
+    };
+
+    // Add all equipment forced in a particular slot
+    for (const slotName of outfitSlots) {
+      result[slotName] = this.equips.get(
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName)
+      );
+    }
     return result;
   }
 }
