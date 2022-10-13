@@ -2,6 +2,7 @@ import { Effect, Familiar, Item, Location } from "kolmafia";
 import { get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
+import { Limit } from "./limit";
 
 export type Quest<T> = {
   name: string;
@@ -65,13 +66,6 @@ export type Task<A extends string = never> = {
   limit?: Limit;
   outfit?: OutfitSpec | (() => OutfitSpec);
   combat?: CombatStrategy<A>;
-};
-
-export type Limit = {
-  tries?: number; // Number of attempts per script run, after which we abort.
-  turns?: number; // Number of turns_spent in the task location, after which we abort.
-  soft?: number; // Number of attempts per script run, after which we abort with "unlucky".
-  message?: string; // An extra message to include with the error.
 };
 
 /**

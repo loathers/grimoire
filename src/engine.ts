@@ -109,6 +109,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     print(``);
     print(`Executing ${task.name}`, "blue");
 
+    // Determine the proper postcondition for after the task executes.
+    const postcondition = task.limit?.guard?.();
+
     // Acquire any items and effects first, possibly for later execution steps.
     this.acquireItems(task);
     this.acquireEffects(task);
@@ -137,7 +140,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
 
     // Mark that we tried the task, and apply limits
     this.markAttempt(task);
-    if (!task.completed()) this.checkLimits(task);
+    this.checkLimits(task, postcondition);
   }
 
   /**
@@ -343,15 +346,22 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The task to check.
    * @throws An error if any of the internal limits have been passed.
    */
-  checkLimits(task: T): void {
+  checkLimits(task: T, postcondition: (() => boolean) | undefined): void {
     if (!task.limit) return;
     const failureMessage = task.limit.message ? ` ${task.limit.message}` : "";
-    if (task.limit.tries && this.attempts[task.name] >= task.limit.tries)
-      throw `Task ${task.name} did not complete within ${task.limit.tries} attempts. Please check what went wrong.${failureMessage}`;
-    if (task.limit.soft && this.attempts[task.name] >= task.limit.soft)
-      throw `Task ${task.name} did not complete within ${task.limit.soft} attempts. Please check what went wrong (you may just be unlucky).${failureMessage}`;
-    if (task.limit.turns && task.do instanceof Location && task.do.turnsSpent >= task.limit.turns)
-      throw `Task ${task.name} did not complete within ${task.limit.turns} turns. Please check what went wrong.${failureMessage}`;
+    if (!task.completed()) {
+      if (task.limit.tries && this.attempts[task.name] >= task.limit.tries)
+        throw `Task ${task.name} did not complete within ${task.limit.tries} attempts. Please check what went wrong.${failureMessage}`;
+      if (task.limit.soft && this.attempts[task.name] >= task.limit.soft)
+        throw `Task ${task.name} did not complete within ${task.limit.soft} attempts. Please check what went wrong (you may just be unlucky).${failureMessage}`;
+      if (task.limit.turns && task.do instanceof Location && task.do.turnsSpent >= task.limit.turns)
+        throw `Task ${task.name} did not complete within ${task.limit.turns} turns. Please check what went wrong.${failureMessage}`;
+      if (task.limit.unready && task.ready?.())
+        throw `Task ${task.name} is still ready, but it should not be. Please check what went wrong.${failureMessage}`;
+    }
+    if (postcondition && !postcondition()) {
+      throw `Task ${task.name} failed its guard. Please check what went wrong.${failureMessage}`;
+    }
   }
 
   /**
