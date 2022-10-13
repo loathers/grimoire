@@ -23,7 +23,31 @@ import {
   MaximizeOptions,
   Requirement,
 } from "libram";
-import { outfitSlots, OutfitSpec } from "./task";
+
+export const outfitSlots = [
+  "hat",
+  "back",
+  "weapon",
+  "offhand",
+  "shirt",
+  "pants",
+  "acc1",
+  "acc2",
+  "acc3",
+  "famequip",
+] as const;
+
+export type OutfitSlot = typeof outfitSlots[number];
+
+export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
+
+export interface OutfitSpec extends OutfitEquips {
+  equip?: Item[]; // Items to be equipped in any slot
+  modifier?: string; // Modifier to maximize
+  familiar?: Familiar; // Familiar to use
+  avoid?: Item[]; // Items that cause issues and so should not be equipped
+  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
+}
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
 
