@@ -217,13 +217,14 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, and false otherwise.
    */
-  equip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+  equip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
     if (Array.isArray(thing)) {
       if (slot !== undefined) return thing.some((val) => this.equip(val, slot));
       return thing.every((val) => this.equip(val));
     }
     if (thing instanceof Item) return this.equipItem(thing, slot);
     if (thing instanceof Familiar) return this.equipFamiliar(thing);
+    if (thing instanceof Outfit) return this.equipSpec(thing.spec());
     return this.equipSpec(thing);
   }
 
@@ -236,7 +237,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if this thing can be equipped.
    */
-  canEquip(thing: Item | Familiar | OutfitSpec | Item[], slot?: Slot): boolean {
+  canEquip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
     const outfit = this.clone();
     return outfit.equip(thing, slot);
   }
