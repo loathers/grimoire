@@ -338,6 +338,9 @@ export class Outfit {
     }
   }
 
+  /**
+   * Build an Outfit identical to this outfit.
+   */
   clone(): Outfit {
     const result = new Outfit();
     result.equips = new Map(this.equips);
@@ -345,6 +348,29 @@ export class Outfit {
     result.familiar = this.familiar;
     result.modifier = this.modifier;
     result.avoid = [...this.avoid];
+    return result;
+  }
+
+  /**
+   * Build an OutfitSpec identical to this outfit.
+   */
+  spec(): OutfitSpec {
+    const result: OutfitSpec = {
+      modifier: this.modifier,
+      familiar: this.familiar,
+      avoid: [...this.avoid],
+      skipDefaults: this.skipDefaults,
+    };
+
+    // Add all equipment forced in a particular slot
+    for (const slotName of outfitSlots) {
+      result[slotName] = this.equips.get(
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName)
+      );
+    }
     return result;
   }
 }
