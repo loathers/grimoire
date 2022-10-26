@@ -57,6 +57,7 @@ export class CombatStrategy<A extends string = never> {
   private autoattacks: Map<Monster, DelayedMacro[]> = new Map();
   private default_action?: A;
   private actions: Map<Monster, A> = new Map();
+  private ccs_entries: Map<Monster, string[]> = new Map();
 
   /**
    * Add a macro to perform for this monster. If multiple macros are given
@@ -149,6 +150,29 @@ export class CombatStrategy<A extends string = never> {
   }
 
   /**
+   * Add a separate entry in the grimoire-generated CCS file for the specified
+   * monster. If multiple entries are given for the same monster, they are
+   * concatinated.
+   *
+   * This should typically be only used rarely, on monsters for which KoL does
+   * not support macros in combat (e.g. rampaging adding machine).
+   *
+   * @param entry The entry to add for the given monster.
+   * @param monsters Which monsters to add the entry to.
+   * @param prepend If true, add the entry before all previous entries. If
+   *   false, add after all previous entries.
+   */
+  public ccs(entry: string, monsters: Monster[] | Monster, prepend?: boolean): this {
+    if (monsters instanceof Monster) monsters = [monsters];
+    for (const monster of monsters) {
+      if (!this.ccs_entries.has(monster)) this.ccs_entries.set(monster, []);
+      if (prepend) this.ccs_entries.get(monster)?.unshift(entry);
+      else this.ccs_entries.get(monster)?.push(entry);
+    }
+    return this;
+  }
+
+  /**
    * Check if the provided action was requested for any monsters, or for the
    * general action.
    */
@@ -190,6 +214,7 @@ export class CombatStrategy<A extends string = never> {
     for (const pair of this.autoattacks) result.autoattacks.set(pair[0], [...pair[1]]);
     result.default_action = this.default_action;
     for (const pair of this.actions) result.actions.set(pair[0], pair[1]);
+    for (const pair of this.ccs_entries) result.ccs_entries.set(pair[0], [...pair[1]]);
     return result;
   }
 
@@ -258,6 +283,19 @@ export class CombatStrategy<A extends string = never> {
     // Perform the non-monster specific macro
     if (this.default_autoattack) result.step(...this.default_autoattack.map(undelay));
 
+    return result;
+  }
+
+  /**
+   * Compile the CCS entries of this combat strategy into a single array.
+   *
+   * @returns The lines of a CCS file, not including the [default] macro.
+   */
+  public compileCcs(): string[] {
+    const result = [];
+    for (const ccs_entry of this.ccs_entries) {
+      result.push(`[${ccs_entry[0].name}]`, ...ccs_entry[1]);
+    }
     return result;
   }
 

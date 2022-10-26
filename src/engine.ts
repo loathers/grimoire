@@ -275,11 +275,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     macro.save();
     if (!this.options.ccs) {
       // Use the macro through a CCS file
-      const ccsContents = `[ default ]\n"${macro.toString()}"`;
+      const otherCCSEntries = task_combat.compileCcs();
+      const ccsContents = ["[ default ]", macro.toString(), ...otherCCSEntries].join("\n");
       if (ccsContents !== this.cachedCcsContents) {
         writeCcs(ccsContents, grimoireCCS);
         cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
         this.cachedCcsContents = ccsContents;
+      }
+      if (ccsContents.length > 0) {
+        logprint(`Other CCS: ${otherCCSEntries.join(";")}`);
       }
     }
     logprint(`Macro: ${macro.toString()}`);
