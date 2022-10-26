@@ -38,6 +38,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
+  cachedCcsContents = "";
 
   /**
    * Create the engine.
@@ -274,8 +275,12 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     macro.save();
     if (!this.options.ccs) {
       // Use the macro through a CCS file
-      writeCcs(`[ default ]\n"${macro.toString()}"`, grimoireCCS);
-      cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
+      const ccsContents = `[ default ]\n"${macro.toString()}"`;
+      if (ccsContents !== this.cachedCcsContents) {
+        writeCcs(ccsContents, grimoireCCS);
+        cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
+        this.cachedCcsContents = ccsContents;
+      }
     }
     logprint(`Macro: ${macro.toString()}`);
 
