@@ -81,6 +81,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    */
   public destruct(): void {
     this.propertyManager.resetAll();
+    setAutoAttack(0);
   }
 
   /**
@@ -276,17 +277,17 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     if (!this.options.ccs) {
       // Use the macro through a CCS file
       const otherCCSEntries = task_combat.compileCcs();
-      const ccsContents = ["[ default ]", macro.toString(), ...otherCCSEntries].join("\n");
+      const ccsContents = ["[default]", `"${macro.toString()}"`, ...otherCCSEntries].join("\n");
+
+      // Log Macro + other CCS
+      logprint(`CCS: ${ccsContents.replace("\n", "\\n ")}`);
+
       if (ccsContents !== this.cachedCcsContents) {
         writeCcs(ccsContents, grimoireCCS);
         cliExecute(`ccs ${grimoireCCS}`); // force Mafia to reparse the ccs
         this.cachedCcsContents = ccsContents;
       }
-      if (ccsContents.length > 0) {
-        logprint(`Other CCS: ${otherCCSEntries.join(";")}`);
-      }
     }
-    logprint(`Macro: ${macro.toString()}`);
 
     // Save autoattack combat macro
     const autoattack = task_combat.compileAutoattack();
