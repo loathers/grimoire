@@ -69,7 +69,7 @@ export class Outfit {
     return true;
   }
 
-  private haveEquipped(item: Item, slot?: Slot): boolean {
+  public haveEquipped(item: Item, slot?: Slot): boolean {
     if (slot === undefined) return this.countEquipped(item) > 0;
     return this.equips.get(slot) === item;
   }
