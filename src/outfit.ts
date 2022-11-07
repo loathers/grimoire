@@ -2,11 +2,11 @@ import {
   booleanModifier,
   canEquip,
   equip,
-  equippedAmount,
   equippedItem,
   Familiar,
   Item,
   logprint,
+  equippedAmount as mafiaEquippedAmount,
   weaponHands as mafiaWeaponHands,
   myFamiliar,
   Slot,
@@ -58,19 +58,19 @@ export class Outfit {
   modifier = "";
   avoid: Item[] = [];
 
-  private countEquipped(item: Item): number {
+  public equippedAmount(item: Item): number {
     return [...this.equips.values()].filter((i) => i === item).length;
   }
 
   private isAvailable(item: Item): boolean {
     if (this.avoid?.includes(item)) return false;
-    if (!have(item, this.countEquipped(item) + 1)) return false;
-    if (booleanModifier(item, "Single Equip") && this.countEquipped(item) > 0) return false;
+    if (!have(item, this.equippedAmount(item) + 1)) return false;
+    if (booleanModifier(item, "Single Equip") && this.equippedAmount(item) > 0) return false;
     return true;
   }
 
   public haveEquipped(item: Item, slot?: Slot): boolean {
-    if (slot === undefined) return this.countEquipped(item) > 0;
+    if (slot === undefined) return this.equippedAmount(item) > 0;
     return this.equips.get(slot) === item;
   }
 
@@ -333,7 +333,9 @@ export class Outfit {
       }
     }
     for (const accessory of accessoryEquips) {
-      if (equippedAmount(accessory) < accessoryEquips.filter((acc) => acc === accessory).length) {
+      if (
+        mafiaEquippedAmount(accessory) < accessoryEquips.filter((acc) => acc === accessory).length
+      ) {
         throw `Failed to fully dress (expected: acc ${accessory})`;
       }
     }
