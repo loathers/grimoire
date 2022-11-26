@@ -39,11 +39,10 @@ export type Modes = {
     | "cocoon";
   snowsuit?: "eyebrows" | "smirk" | "nose" | "goatee" | "hat";
   edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
-  retrocape?:
-    | ["vampire" | "heck" | "robot", "hold" | "thrill" | "kiss" | "kill"]
-    | "vampire"
-    | "heck"
-    | "robot";
+  retrocape?: [
+    "vampire" | "heck" | "robot" | undefined,
+    "hold" | "thrill" | "kiss" | "kill" | undefined
+  ]; // Undefined means unspecified
   parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
 };
 

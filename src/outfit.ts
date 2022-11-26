@@ -192,6 +192,11 @@ export class Outfit {
     if (spec.modifier) {
       this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
     }
+    if (spec.modes) {
+      if (!this.addModes(spec.modes)) {
+        succeeded = false;
+      }
+    }
     return succeeded;
   }
 
@@ -226,11 +231,39 @@ export class Outfit {
   }
 
   addModes(modes: Modes): boolean {
-    let compatible = false;
+    let compatible = true;
+
+    // Check if the new modes are compatible with existing modes
     for (const mode of modeableCommands) {
-      if (this.modes[mode] !== undefined && this.modes[mode] !== modes[mode]) {
+      if (mode === "retrocape") continue; // checked below
+      if (
+        this.modes[mode] !== undefined &&
+        modes[mode] !== undefined &&
+        this.modes[mode] !== modes[mode]
+      ) {
         compatible = false;
       }
+    }
+
+    // Check if retrocape modes are compatible
+    // (Segments that are undefined are compatible with everything)
+    if (this.modes["retrocape"] !== undefined && modes["retrocape"] !== undefined) {
+      if (
+        this.modes["retrocape"][0] &&
+        modes["retrocape"][0] &&
+        this.modes["retrocape"][0] !== modes["retrocape"][0]
+      ) {
+        compatible = false;
+      } else if (
+        this.modes["retrocape"][1] &&
+        modes["retrocape"][1] &&
+        this.modes["retrocape"][1] !== modes["retrocape"][1]
+      ) {
+        compatible = false;
+      }
+
+      this.modes["retrocape"][0] = this.modes["retrocape"][0] ?? modes["retrocape"][0];
+      this.modes["retrocape"][1] = this.modes["retrocape"][1] ?? modes["retrocape"][1];
     }
 
     this.modes = {
