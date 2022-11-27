@@ -27,7 +27,22 @@ import {
   Requirement,
 } from "libram";
 
-// Interfaces for OutfitSpec
+export const outfitSlots = [
+  "hat",
+  "back",
+  "weapon",
+  "offhand",
+  "shirt",
+  "pants",
+  "acc1",
+  "acc2",
+  "acc3",
+  "famequip",
+] as const;
+
+export type OutfitSlot = typeof outfitSlots[number];
+
+export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
@@ -57,23 +72,6 @@ export type Modes = {
 };
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
-
-export const outfitSlots = [
-  "hat",
-  "back",
-  "weapon",
-  "offhand",
-  "shirt",
-  "pants",
-  "acc1",
-  "acc2",
-  "acc3",
-  "famequip",
-] as const;
-
-export type OutfitSlot = typeof outfitSlots[number];
-
-export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
 const modeableCommands = [
   "backupcamera",
