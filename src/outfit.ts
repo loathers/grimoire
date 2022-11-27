@@ -266,16 +266,19 @@ export class Outfit {
   }
 
   /**
-   * Set the provided modes for items in the outfit.
+   * Set the provided modes for items that may be equipped in the outfit.
+   *
+   * This function does *not* equip items for the set modes; they must be
+   * equipped separately.
    *
    * If a mode is already set for an item that is different from the provided
    * mode, this function will return false and not change the mode for that
-   * item. (But other modes might still be changed.)
+   * item. (But other modes might still be changed if they are compatible.)
    *
    * Note that the superhero and instuctions of a retrocape can be set
-   * indepdently (`undefined` for a retrocape part is treated as "don't care").
+   * independently (`undefined` is treated as "don't care").
    *
-   * @param modes Modes to set.
+   * @param modes Modes to set in this outfit.
    * @returns True if all modes were sucessfully set, and false otherwise.
    */
   setModes(modes: Modes): boolean {
