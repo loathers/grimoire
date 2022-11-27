@@ -419,6 +419,8 @@ export class Outfit {
       }
       logprint(`Maximize: ${this.modifier}`);
     }
+
+    // Set the modes of any equipped items.
     applyModes(modes);
 
     // Verify that all equipment was indeed equipped
