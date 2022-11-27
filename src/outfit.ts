@@ -19,13 +19,61 @@ import {
   $skill,
   $slot,
   $slots,
+  applyModes,
+  get,
   have,
+  Modes as LibramModes,
   MaximizeOptions,
   Requirement,
 } from "libram";
-import { Modes, outfitSlots, OutfitSpec } from "./task";
+
+// Interfaces for OutfitSpec
+
+export interface OutfitSpec extends OutfitEquips {
+  equip?: Item[]; // Items to be equipped in any slot
+  modes?: Modes; // Modes to set on particular items
+  modifier?: string; // Modifier to maximize
+  familiar?: Familiar; // Familiar to use
+  avoid?: Item[]; // Items that cause issues and so should not be equipped
+  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
+}
+
+export type Modes = {
+  backupcamera?: "ml" | "meat" | "init";
+  umbrella?:
+    | "broken"
+    | "forward-facing"
+    | "bucket style"
+    | "pitchfork style"
+    | "constantly twirling"
+    | "cocoon";
+  snowsuit?: "eyebrows" | "smirk" | "nose" | "goatee" | "hat";
+  edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
+  retrocape?: [
+    "vampire" | "heck" | "robot" | undefined,
+    "hold" | "thrill" | "kiss" | "kill" | undefined
+  ]; // Undefined means "don't care"
+  parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
+};
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
+
+export const outfitSlots = [
+  "hat",
+  "back",
+  "weapon",
+  "offhand",
+  "shirt",
+  "pants",
+  "acc1",
+  "acc2",
+  "acc3",
+  "famequip",
+] as const;
+
+export type OutfitSlot = typeof outfitSlots[number];
+
+export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
 const modeableCommands = [
   "backupcamera",
@@ -35,17 +83,6 @@ const modeableCommands = [
   "retrocape",
   "parka",
 ] as const;
-type Mode = typeof modeableCommands[number];
-
-const modeables: Record<Mode, Item> = {
-  backupcamera: $item`backup camera`,
-  umbrella: $item`unbreakable umbrella`,
-  snowsuit: $item`Snow Suit`,
-  edpiece: $item`The Crown of Ed the Undying`,
-  retrocape: $item`unwrapped knock-off retro superhero cape`,
-  // eslint-disable-next-line libram/verify-constants
-  parka: $item`Jurassic Parka`,
-} as const;
 
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
@@ -193,7 +230,7 @@ export class Outfit {
       this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
     }
     if (spec.modes) {
-      if (!this.addModes(spec.modes)) {
+      if (!this.setModes(spec.modes)) {
         succeeded = false;
       }
     }
@@ -230,31 +267,42 @@ export class Outfit {
     return this.equipSpec(thing);
   }
 
-  addModes(modes: Modes): boolean {
+  /**
+   * Set the provided modes for items in the outfit.
+   *
+   * If a mode is already set for an item that is different from the provided
+   * mode, this function will return false and not change the mode for that
+   * item. (But other modes might still be changed.)
+   *
+   * Note that the superhero and instuctions of a retrocape can be set
+   * indepdently (`undefined` for a retrocape part is treated as "don't care").
+   *
+   * @param modes Modes to set.
+   * @returns True if all modes were sucessfully set, and false otherwise.
+   */
+  setModes(modes: Modes): boolean {
     let compatible = true;
 
     // Check if the new modes are compatible with existing modes
     for (const mode of modeableCommands) {
       if (mode === "retrocape") continue; // checked below
-      if (
-        this.modes[mode] !== undefined &&
-        modes[mode] !== undefined &&
-        this.modes[mode] !== modes[mode]
-      ) {
+      if (this.modes[mode] && modes[mode] && this.modes[mode] !== modes[mode]) {
         compatible = false;
       }
     }
 
     // Check if retrocape modes are compatible
-    // (Segments that are undefined are compatible with everything)
-    if (this.modes["retrocape"] !== undefined && modes["retrocape"] !== undefined) {
+    // (Parts that are undefined are compatible with everything)
+    if (this.modes["retrocape"] && modes["retrocape"]) {
       if (
         this.modes["retrocape"][0] &&
         modes["retrocape"][0] &&
         this.modes["retrocape"][0] !== modes["retrocape"][0]
       ) {
         compatible = false;
-      } else if (
+      }
+
+      if (
         this.modes["retrocape"][1] &&
         modes["retrocape"][1] &&
         this.modes["retrocape"][1] !== modes["retrocape"][1]
@@ -268,7 +316,7 @@ export class Outfit {
 
     this.modes = {
       ...modes,
-      ...this.modes,
+      ...this.modes, // if conflict, default to the preexisting modes
     };
     return compatible;
   }
@@ -354,11 +402,13 @@ export class Outfit {
     }
 
     // Remaining slots are filled by the maximizer
+    const modes = convertToLibramModes(this.modes);
     if (this.modifier) {
       const allRequirements = [
         new Requirement([this.modifier], {
           preventSlot: [...usedSlots],
           preventEquip: this.avoid,
+          modes: modes,
         }),
       ];
       if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
@@ -368,6 +418,7 @@ export class Outfit {
       }
       logprint(`Maximize: ${this.modifier}`);
     }
+    applyModes(modes);
 
     // Verify that all equipment was indeed equipped
     if (this.familiar !== undefined && myFamiliar() !== this.familiar)
@@ -396,6 +447,7 @@ export class Outfit {
     result.familiar = this.familiar;
     result.modifier = this.modifier;
     result.avoid = [...this.avoid];
+    result.modes = { ...this.modes };
     return result;
   }
 
@@ -408,6 +460,7 @@ export class Outfit {
       familiar: this.familiar,
       avoid: [...this.avoid],
       skipDefaults: this.skipDefaults,
+      modes: { ...this.modes },
     };
 
     // Add all equipment forced in a particular slot
@@ -421,4 +474,67 @@ export class Outfit {
     }
     return result;
   }
+}
+
+/**
+ * Get the modes of this outfit in a type compatible with Libram.
+ *
+ * This conversion is needed since we store the retrocape modes
+ * internally as an array, but libram uses a string.
+ *
+ * @returns The modes equipped to this outfit.
+ */
+export function convertToLibramModes(modes: Modes): LibramModes {
+  return {
+    backupcamera: modes["backupcamera"],
+    umbrella: modes["umbrella"],
+    snowsuit: modes["snowsuit"],
+    edpiece: modes["edpiece"],
+    retrocape: modes["retrocape"]?.filter((s) => s !== undefined).join(" "),
+    parka: modes["parka"],
+  };
+}
+
+/**
+ * Get the current modes of all items.
+ *
+ * @returns The current mode settings for all items, equipped or not.
+ */
+export function getCurrentModes(): Modes {
+  return {
+    backupcamera: getMode("backupCameraMode", ["ml", "meat", "init"]),
+    umbrella: getMode("umbrellaState", [
+      "broken",
+      "forward-facing",
+      "bucket style",
+      "pitchfork style",
+      "constantly twirling",
+      "cocoon",
+    ]),
+    snowsuit: getMode("snowsuit", ["eyebrows", "smirk", "nose", "goatee", "hat"]),
+    edpiece: getMode("edPiece", ["bear", "owl", "puma", "hyena", "mouse", "weasel", "fish"]),
+    retrocape: [
+      getMode("retroCapeSuperhero", ["vampire", "heck", "robot"]),
+      getMode("retroCapeWashingInstructions", ["hold", "thrill", "kiss", "kill"]),
+    ],
+    parka: getMode("parkaMode", [
+      "kachungasaur",
+      "dilophosaur",
+      "ghostasaurus",
+      "spikolodon",
+      "pterodactyl",
+    ]),
+  };
+}
+
+/**
+ * Get the current value for a mode in a type-safe way.
+ *
+ * @param property The mafia property for the mode.
+ * @param options A typed list of options for the mode.
+ * @returns The mode if the property value matched a valid option, or undefined.
+ */
+function getMode<T extends string>(property: string, options: readonly T[]): T | undefined {
+  const val = get(property, "");
+  return options.find((s) => s === val); // .includes has type issues
 }

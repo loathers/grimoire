@@ -1,59 +1,15 @@
-import { Effect, Familiar, Item, Location } from "kolmafia";
+import { Effect, Item, Location } from "kolmafia";
 import { get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
-import { Outfit } from "./outfit";
+import { Outfit, OutfitSpec } from "./outfit";
 
 export type Quest<T> = {
   name: string;
   completed?: () => boolean;
   tasks: T[];
 };
-
-export const outfitSlots = [
-  "hat",
-  "back",
-  "weapon",
-  "offhand",
-  "shirt",
-  "pants",
-  "acc1",
-  "acc2",
-  "acc3",
-  "famequip",
-] as const;
-
-export type OutfitSlot = typeof outfitSlots[number];
-
-export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
-
-export type Modes = {
-  backupcamera?: "ml" | "meat" | "init";
-  umbrella?:
-    | "broken"
-    | "forward-facing"
-    | "bucket style"
-    | "pitchfork style"
-    | "constantly twirling"
-    | "cocoon";
-  snowsuit?: "eyebrows" | "smirk" | "nose" | "goatee" | "hat";
-  edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
-  retrocape?: [
-    "vampire" | "heck" | "robot" | undefined,
-    "hold" | "thrill" | "kiss" | "kill" | undefined
-  ]; // Undefined means unspecified
-  parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
-};
-
-export interface OutfitSpec extends OutfitEquips {
-  equip?: Item[]; // Items to be equipped in any slot
-  modes?: Modes; // Modes to set on particular items
-  modifier?: string; // Modifier to maximize
-  familiar?: Familiar; // Familiar to use
-  avoid?: Item[]; // Items that cause issues and so should not be equipped
-  skipDefaults?: boolean; // Do not equip default equipment; fully maximize
-}
 
 export type AcquireItem = {
   item: Item;
