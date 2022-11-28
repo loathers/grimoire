@@ -31,6 +31,11 @@ interface ArgSpec<T> {
  */
 type ArgSpecNoDefault<T> = Omit<ArgSpec<T>, "default">;
 
+interface ArgOptions {
+  defaultGroupName?: string; // Name to use in help text for the top-level group; defaults to "Options".
+  positionalArgs?: string[]; // Key names of args that can be passed positionally, without the key being provided at runtime. (Not recommended, but provided for backwards compatability).
+}
+
 export class Args {
   /**
    * Create an argument for a custom type.
@@ -147,7 +152,7 @@ export class Args {
    * @param args A JS object specifying the script arguments. Its values should
    *    be {@link Arg} objects (created by Args.string, Args.number, or others)
    *    or groups of arguments (created by Args.group).
-   * @param defaultGroupName Header to use for the argument list in the help.
+   * @param options Config options for the args and arg parser.
    * @returns An object which can hold parsed argument values. The keys of this
    *    object are identical to the keys in 'args'.
    */
@@ -155,7 +160,7 @@ export class Args {
     scriptName: string,
     scriptHelp: string,
     args: T,
-    defaultGroupName = "Options"
+    options?: ArgOptions
   ): ParsedArgs<T> & { help: boolean } {
     traverse(args, (keySpec, key) => {
       if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
@@ -173,7 +178,7 @@ export class Args {
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
-      [defaultGroupNameSymbol]: defaultGroupName,
+      [optionsSymbol]: options ?? {},
     } as any;
 
     // Parse values from settings.
@@ -185,6 +190,15 @@ export class Args {
       return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
     });
 
+    if (options?.positionalArgs) {
+      const keys: string[] = [];
+      traverse(argsWithHelp, (keySpec, key) => {
+        keys.push(keySpec.key ?? key);
+      });
+      for (const arg of options.positionalArgs) {
+        if (!keys.includes(arg)) throw `Unknown key for positional arg: ${arg}`;
+      }
+    }
     return res;
   }
 
@@ -209,7 +223,12 @@ export class Args {
     });
 
     // Parse new argments from the command line
-    const parsed = new CommandParser(command, keys, flags).parse();
+    const parsed = new CommandParser(
+      command,
+      keys,
+      flags,
+      args[optionsSymbol].positionalArgs ?? []
+    ).parse();
     traverseAndMaybeSet(spec, args, (keySpec, key) => {
       const argKey = keySpec.key ?? key;
       const value_str = parsed.get(argKey);
@@ -224,14 +243,16 @@ export class Args {
    * @param scriptHelp Brief description of this script, for the help message.
    * @param spec An object specifying the script arguments.
    * @param command The command line input.
+   * @param options Config options for the args and arg parser.
    */
   static parse<T extends ArgMap>(
     scriptName: string,
     scriptHelp: string,
     spec: T,
-    command: string
+    command: string,
+    options?: ArgOptions
   ): ParsedArgs<T> {
-    const args = this.create(scriptName, scriptHelp, spec);
+    const args = this.create(scriptName, scriptHelp, spec, options);
     this.fill(args, command);
     return args;
   }
@@ -253,7 +274,7 @@ export class Args {
 
     printHtml(`${scriptHelp}`);
     printHtml("");
-    printHtml(`<b>${args[defaultGroupNameSymbol]}:</b>`);
+    printHtml(`<b>${args[optionsSymbol].defaultGroupName ?? "Options"}:</b>`);
     traverse(
       spec,
       (arg, key) => {
@@ -335,12 +356,12 @@ type ArgNoDefault<T> = Omit<Arg<T>, "default">;
 const specSymbol: unique symbol = Symbol("spec");
 const scriptSymbol: unique symbol = Symbol("script");
 const scriptHelpSymbol: unique symbol = Symbol("scriptHelp");
-const defaultGroupNameSymbol: unique symbol = Symbol("defaultGroupName");
+const optionsSymbol: unique symbol = Symbol("options");
 type ArgMetadata<T extends ArgMap> = {
   [specSymbol]: T;
   [scriptSymbol]: string;
   [scriptHelpSymbol]: string;
-  [defaultGroupNameSymbol]: string;
+  [optionsSymbol]: ArgOptions;
 };
 
 /**
@@ -475,12 +496,20 @@ class CommandParser {
   private command: string;
   private keys: Set<string>;
   private flags: Set<string>;
+  private positionalArgs: string[];
+
+  private positionalArgsParsed: number;
   private index: number;
-  constructor(command: string, keys: Set<string>, flags: Set<string>) {
+
+  private prevUnquotedKey: string | undefined;
+
+  constructor(command: string, keys: Set<string>, flags: Set<string>, positionalArgs: string[]) {
     this.command = command;
     this.index = 0;
     this.keys = keys;
     this.flags = flags;
+    this.positionalArgs = positionalArgs;
+    this.positionalArgsParsed = 0;
   }
 
   /**
@@ -498,9 +527,10 @@ class CommandParser {
         this.consume(["!"]);
       }
 
+      const startIndex = this.index;
       const key = this.parseKey();
       if (result.has(key)) {
-        throw `Duplicate key: ${key}`;
+        throw `Duplicate key ${key} (first set to ${result.get(key) ?? ""})`;
       }
       if (this.flags.has(key)) {
         // The key corresponds to a flag.
@@ -508,12 +538,36 @@ class CommandParser {
         result.set(key, parsing_negative_flag ? "false" : "true");
         if (this.peek() === "=") throw `Flag ${key} cannot be assigned a value`;
         if (!this.finished()) this.consume([" "]);
-      } else {
+        this.prevUnquotedKey = undefined;
+      } else if (this.keys.has(key)) {
         // Parse [key]=[value] or [key] [value]
         this.consume(["=", " "]);
         const value = this.parseValue();
+        if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
+        else this.prevUnquotedKey = key;
         if (!this.finished()) this.consume([" "]);
         result.set(key, value);
+      } else if (this.positionalArgsParsed < this.positionalArgs.length && this.peek() !== "=") {
+        // Parse [value] as the next positional arg
+        const positionalKey = this.positionalArgs[this.positionalArgsParsed];
+        this.positionalArgsParsed++;
+
+        this.index = startIndex; // back up to reparse the key as a value
+        const value = this.parseValue();
+        if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
+        else this.prevUnquotedKey = key;
+        if (!this.finished()) this.consume([" "]);
+
+        if (result.has(positionalKey))
+          throw `Cannot assign ${value} to ${positionalKey} (positionally) since ${positionalKey} was already set to ${
+            result.get(positionalKey) ?? ""
+          }`;
+        result.set(positionalKey, value);
+      } else {
+        // Key not found; include a better error message if it is possible for quotes to have been missed
+        if (this.prevUnquotedKey && this.peek() !== "=")
+          throw `Unknown argument: ${key} (if this should have been parsed as part of ${this.prevUnquotedKey}, you should surround the entire value in quotes)`;
+        else throw `Unknown argument: ${key}`;
       }
     }
     return result;
@@ -532,6 +586,15 @@ class CommandParser {
   private peek(): string | undefined {
     if (this.index >= this.command.length) return undefined;
     return this.command.charAt(this.index);
+  }
+
+  /**
+   * @returns The character just parsed, if it exists.
+   */
+  private prev(): string | undefined {
+    if (this.index <= 0) return undefined;
+    if (this.index >= this.command.length + 1) return undefined;
+    return this.command.charAt(this.index - 1);
   }
 
   /**
@@ -572,9 +635,6 @@ class CommandParser {
     const keyEnd = this.findNext(["=", " "]);
     const key = this.command.substring(this.index, keyEnd);
     this.index = keyEnd;
-    if (!this.keys.has(key) && !this.flags.has(key)) {
-      throw `Unknown key: ${key}`;
-    }
     return key;
   }
 
