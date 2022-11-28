@@ -31,6 +31,10 @@ interface ArgSpec<T> {
  */
 type ArgSpecNoDefault<T> = Omit<ArgSpec<T>, "default">;
 
+interface ArgOptions {
+  defaultGroupName?: string; // Name to use in help text for the top-level group; defaults to "Options".
+}
+
 export class Args {
   /**
    * Create an argument for a custom type.
@@ -155,7 +159,7 @@ export class Args {
     scriptName: string,
     scriptHelp: string,
     args: T,
-    defaultGroupName = "Options"
+    options?: ArgOptions
   ): ParsedArgs<T> & { help: boolean } {
     traverse(args, (keySpec, key) => {
       if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
@@ -173,7 +177,7 @@ export class Args {
       [specSymbol]: argsWithHelp,
       [scriptSymbol]: scriptName,
       [scriptHelpSymbol]: scriptHelp,
-      [defaultGroupNameSymbol]: defaultGroupName,
+      [optionsSymbol]: options ?? {},
     } as any;
 
     // Parse values from settings.
@@ -229,9 +233,10 @@ export class Args {
     scriptName: string,
     scriptHelp: string,
     spec: T,
-    command: string
+    command: string,
+    options?: ArgOptions
   ): ParsedArgs<T> {
-    const args = this.create(scriptName, scriptHelp, spec);
+    const args = this.create(scriptName, scriptHelp, spec, options);
     this.fill(args, command);
     return args;
   }
@@ -253,7 +258,7 @@ export class Args {
 
     printHtml(`${scriptHelp}`);
     printHtml("");
-    printHtml(`<b>${args[defaultGroupNameSymbol]}:</b>`);
+    printHtml(`<b>${args[optionsSymbol].defaultGroupName}:</b>`);
     traverse(
       spec,
       (arg, key) => {
@@ -335,12 +340,12 @@ type ArgNoDefault<T> = Omit<Arg<T>, "default">;
 const specSymbol: unique symbol = Symbol("spec");
 const scriptSymbol: unique symbol = Symbol("script");
 const scriptHelpSymbol: unique symbol = Symbol("scriptHelp");
-const defaultGroupNameSymbol: unique symbol = Symbol("defaultGroupName");
+const optionsSymbol: unique symbol = Symbol("options");
 type ArgMetadata<T extends ArgMap> = {
   [specSymbol]: T;
   [scriptSymbol]: string;
   [scriptHelpSymbol]: string;
-  [defaultGroupNameSymbol]: string;
+  [optionsSymbol]: ArgOptions;
 };
 
 /**
