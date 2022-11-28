@@ -181,8 +181,10 @@ export class Args {
       [optionsSymbol]: options ?? {},
     } as any;
 
+    const metadata = Args.getMetadata(res);
+
     // Parse values from settings.
-    traverseAndMaybeSet(argsWithHelp, res, (keySpec, key) => {
+    metadata.traverseAndMaybeSet(res, (keySpec, key) => {
       const setting = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
       if (setting === "") return undefined; // no setting
       const value_str = get(setting, "");
@@ -192,7 +194,7 @@ export class Args {
 
     if (options?.positionalArgs) {
       const keys: string[] = [];
-      traverse(argsWithHelp, (keySpec, key) => {
+      metadata.traverse((keySpec, key) => {
         keys.push(keySpec.key ?? key);
       });
       for (const arg of options.positionalArgs) {
@@ -210,12 +212,12 @@ export class Args {
   static fill<T extends ArgMap>(args: ParsedArgs<T>, command: string | undefined): void {
     if (command === undefined || command === "") return;
 
-    const spec = args[specSymbol];
+    const metadata = Args.getMetadata(args);
 
     // Load the list of keys and flags from the arg spec
     const keys = new Set<string>();
     const flags = new Set<string>();
-    traverse(spec, (keySpec, key) => {
+    metadata.traverse((keySpec, key) => {
       const name = keySpec.key ?? key;
       if (flags.has(name) || keys.has(name)) throw `Duplicate arg key ${name} is not allowed`;
       if (keySpec.valueHelpName === "FLAG") flags.add(name);
@@ -227,9 +229,9 @@ export class Args {
       command,
       keys,
       flags,
-      args[optionsSymbol].positionalArgs ?? []
+      metadata.options.positionalArgs ?? []
     ).parse();
-    traverseAndMaybeSet(spec, args, (keySpec, key) => {
+    metadata.traverseAndMaybeSet(args, (keySpec, key) => {
       const argKey = keySpec.key ?? key;
       const value_str = parsed.get(argKey);
       if (value_str === undefined) return undefined; // no setting
@@ -268,15 +270,12 @@ export class Args {
    * @param maxOptionsToDisplay If given, do not list more than this many options for each arg.
    */
   static showHelp<T extends ArgMap>(args: ParsedArgs<T>, maxOptionsToDisplay?: number): void {
-    const spec = args[specSymbol];
-    const scriptName = args[scriptSymbol];
-    const scriptHelp = args[scriptHelpSymbol];
+    const metadata = Args.getMetadata(args);
 
-    printHtml(`${scriptHelp}`);
+    printHtml(`${metadata.scriptHelp}`);
     printHtml("");
-    printHtml(`<b>${args[optionsSymbol].defaultGroupName ?? "Options"}:</b>`);
-    traverse(
-      spec,
+    printHtml(`<b>${metadata.options.defaultGroupName ?? "Options"}:</b>`);
+    metadata.traverse(
       (arg, key) => {
         if (arg.hidden) return;
 
@@ -290,7 +289,7 @@ export class Args {
           arg.setting === ""
             ? ""
             : `<font color='#888888'>[setting: ${
-                arg.setting ?? `${scriptName}_${arg.key ?? key}`
+                arg.setting ?? `${metadata.scriptName}_${arg.key ?? key}`
               }]</font>`;
 
         printHtml(
@@ -316,6 +315,18 @@ export class Args {
         printHtml(`<b>${group.name}:</b>`);
       }
     );
+  }
+
+  /**
+   * Load the metadata information for a set of arguments. Only for advanced usage.
+   *
+   * @param args A JS object specifying the script arguments. Its values should
+   *    be {@link Arg} objects (created by Args.string, Args.number, or others)
+   *    or groups of arguments (created by Args.group).
+   * @returns A class containing metadata information.
+   */
+  static getMetadata<T extends ArgMap>(args: ParsedArgs<T>): WrappedArgMetadata<T> {
+    return new WrappedArgMetadata(args);
   }
 }
 
@@ -410,6 +421,59 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
 }
 
 /**
+ * A class that reveals the hidden metadata and specs for arguments.
+ *
+ * Only for advanced usage.
+ */
+class WrappedArgMetadata<T extends ArgMap> {
+  spec: T;
+  scriptName: string;
+  scriptHelp: string;
+  options: ArgOptions;
+
+  constructor(args: ParsedArgs<T>) {
+    this.spec = args[specSymbol];
+    this.scriptName = args[scriptSymbol];
+    this.scriptHelp = args[scriptHelpSymbol];
+    this.options = args[optionsSymbol];
+  }
+
+  /**
+   * Create a parsed args object from this spec using all default values.
+   */
+  loadDefaultValues(): ParsedGroup<T> {
+    return loadDefaultValues(this.spec);
+  }
+
+  /**
+   * Traverse the spec and possibly generate a value for each argument.
+   *
+   * @param result The object to hold the resulting argument values, typically
+   *    the result of loadDefaultValues().
+   * @param setTo A function to generate an argument value from each arg spec.
+   *    If this function returns undefined, then the argument value is unchanged.
+   */
+  traverseAndMaybeSet(
+    result: ParsedArgs<T>,
+    setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+  ) {
+    return traverseAndMaybeSet(this.spec, result, setTo);
+  }
+
+  /**
+   * Traverse the spec and call a method for each argument.
+   *
+   * @param process A function to call at each arg spec.
+   */
+  traverse(
+    process: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => void,
+    onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void
+  ) {
+    return traverse(this.spec, process, onGroup);
+  }
+}
+
+/**
  * Create a parsed args object from a spec using all default values.
  *
  * @param spec The spec for all arguments.
@@ -481,7 +545,7 @@ function traverse<T extends ArgMap>(
 
   for (const group_and_key of groups) {
     onGroup?.(group_and_key[0], group_and_key[1]);
-    traverse(group_and_key[0].args, process);
+    traverse(group_and_key[0].args, process, onGroup);
   }
 }
 
