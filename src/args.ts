@@ -520,7 +520,7 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
   }
 
   if (parsed_value === undefined)
-    throw `${source}  expected ${arg.parser.name}$ but could not parse value: ${value}`;
+    throw `${source} expected ${arg.parser.name}$ but could not parse value: ${value}`;
   const options = arg.options;
   if (options) {
     if (!options.map((option) => option[0]).includes(parsed_value)) {
