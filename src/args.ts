@@ -1,5 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { printHtml } from "kolmafia";
+import {
+  Class,
+  ClassType,
+  Effect,
+  Familiar,
+  Item,
+  Location,
+  Monster,
+  Path,
+  printHtml,
+  Skill,
+} from "kolmafia";
 import { get } from "libram";
 
 /**
@@ -126,6 +137,98 @@ export class Args {
       },
       "FLAG"
     );
+  }
+
+  /**
+   * Create a class argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static class(spec: ArgSpec<Class>): Arg<Class>;
+  static class(spec: ArgSpecNoDefault<Class>): ArgNoDefault<Class>;
+  static class(spec: ArgSpecNoDefault<Class>): ArgNoDefault<Class> {
+    return this.custom(
+      spec,
+      (value: string) => {
+        const match = Class.get(value as ClassType);
+        // Class.get does fuzzy matching:
+        //  e.g. Class.get("sc") returns disco bandit.
+        // To avoid this foot-gun, only return exact matches or id lookups.
+        if (match.toString().toUpperCase() === value.toString().toUpperCase()) return match;
+        if (!isNaN(Number(value))) return match;
+        return undefined;
+      },
+      "CLASS"
+    );
+  }
+
+  /**
+   * Create an effect argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static effect(spec: ArgSpec<Effect>): Arg<Effect>;
+  static effect(spec: ArgSpecNoDefault<Effect>): ArgNoDefault<Effect>;
+  static effect(spec: ArgSpecNoDefault<Effect>): ArgNoDefault<Effect> {
+    return this.custom(spec, Effect.get, "EFFECT");
+  }
+
+  /**
+   * Create a familiar argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static familiar(spec: ArgSpec<Familiar>): Arg<Familiar>;
+  static familiar(spec: ArgSpecNoDefault<Familiar>): ArgNoDefault<Familiar>;
+  static familiar(spec: ArgSpecNoDefault<Familiar>): ArgNoDefault<Familiar> {
+    return this.custom(spec, Familiar.get, "FAMILIAR");
+  }
+
+  /**
+   * Create an item argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static item(spec: ArgSpec<Item>): Arg<Item>;
+  static item(spec: ArgSpecNoDefault<Item>): ArgNoDefault<Item>;
+  static item(spec: ArgSpecNoDefault<Item>): ArgNoDefault<Item> {
+    return this.custom(spec, Item.get, "ITEM");
+  }
+
+  /**
+   * Create a location argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static location(spec: ArgSpec<Location>): Arg<Location>;
+  static location(spec: ArgSpecNoDefault<Location>): ArgNoDefault<Location>;
+  static location(spec: ArgSpecNoDefault<Location>): ArgNoDefault<Location> {
+    return this.custom(spec, Location.get, "LOCATION");
+  }
+
+  /**
+   * Create a monster argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static monster(spec: ArgSpec<Monster>): Arg<Monster>;
+  static monster(spec: ArgSpecNoDefault<Monster>): ArgNoDefault<Monster>;
+  static monster(spec: ArgSpecNoDefault<Monster>): ArgNoDefault<Monster> {
+    return this.custom(spec, Monster.get, "MONSTER");
+  }
+
+  /**
+   * Create a path argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static path(spec: ArgSpec<Path>): Arg<Path>;
+  static path(spec: ArgSpecNoDefault<Path>): ArgNoDefault<Path>;
+  static path(spec: ArgSpecNoDefault<Path>): ArgNoDefault<Path> {
+    return this.custom(spec, Path.get, "PATH");
+  }
+
+  /**
+   * Create a skill argument.
+   * @param spec Specification for this argument. See {@link ArgSpec} for details.
+   */
+  static skill(spec: ArgSpec<Skill>): Arg<Skill>;
+  static skill(spec: ArgSpecNoDefault<Skill>): ArgNoDefault<Skill>;
+  static skill(spec: ArgSpecNoDefault<Skill>): ArgNoDefault<Skill> {
+    return this.custom(spec, Skill.get, "SKILL");
   }
 
   /**
@@ -409,8 +512,15 @@ type ParsedArgs<T extends ArgMap> = ParsedGroup<T> & ArgMetadata<T>;
  * @returns the parsed value.
  */
 function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, value: string): T {
-  const parsed_value = arg.parser(value);
-  if (parsed_value === undefined) throw `${source} could not parse value: ${value}`;
+  let parsed_value;
+  try {
+    parsed_value = arg.parser(value);
+  } catch {
+    parsed_value = undefined;
+  }
+
+  if (parsed_value === undefined)
+    throw `${source} expected ${arg.parser.name}$ but could not parse value: ${value}`;
   const options = arg.options;
   if (options) {
     if (!options.map((option) => option[0]).includes(parsed_value)) {
