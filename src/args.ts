@@ -33,6 +33,7 @@ type ArgSpecNoDefault<T> = Omit<ArgSpec<T>, "default">;
 
 interface ArgOptions {
   defaultGroupName?: string; // Name to use in help text for the top-level group; defaults to "Options".
+  positionalArgs?: string[]; // Args that can be passed as positional args, without a key being provided at runtime. (Not recommended, but provided for backwards compatability).
 }
 
 export class Args {
@@ -151,7 +152,7 @@ export class Args {
    * @param args A JS object specifying the script arguments. Its values should
    *    be {@link Arg} objects (created by Args.string, Args.number, or others)
    *    or groups of arguments (created by Args.group).
-   * @param defaultGroupName Header to use for the argument list in the help.
+   * @param options Config options for the args and arg parser.
    * @returns An object which can hold parsed argument values. The keys of this
    *    object are identical to the keys in 'args'.
    */
@@ -189,6 +190,15 @@ export class Args {
       return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
     });
 
+    if (options?.positionalArgs) {
+      const keys: string[] = [];
+      traverse(argsWithHelp, (keySpec, key) => {
+        keys.push(key);
+      });
+      for (const arg of options.positionalArgs) {
+        if (!keys.includes(arg)) throw `Unknown key for positional arg: ${arg}`;
+      }
+    }
     return res;
   }
 
@@ -213,7 +223,12 @@ export class Args {
     });
 
     // Parse new argments from the command line
-    const parsed = new CommandParser(command, keys, flags).parse();
+    const parsed = new CommandParser(
+      command,
+      keys,
+      flags,
+      args[optionsSymbol].positionalArgs ?? []
+    ).parse();
     traverseAndMaybeSet(spec, args, (keySpec, key) => {
       const argKey = keySpec.key ?? key;
       const value_str = parsed.get(argKey);
@@ -228,6 +243,7 @@ export class Args {
    * @param scriptHelp Brief description of this script, for the help message.
    * @param spec An object specifying the script arguments.
    * @param command The command line input.
+   * @param options Config options for the args and arg parser.
    */
   static parse<T extends ArgMap>(
     scriptName: string,
@@ -258,7 +274,7 @@ export class Args {
 
     printHtml(`${scriptHelp}`);
     printHtml("");
-    printHtml(`<b>${args[optionsSymbol].defaultGroupName}:</b>`);
+    printHtml(`<b>${args[optionsSymbol].defaultGroupName ?? "Options"}:</b>`);
     traverse(
       spec,
       (arg, key) => {
@@ -480,15 +496,20 @@ class CommandParser {
   private command: string;
   private keys: Set<string>;
   private flags: Set<string>;
+  private positionalArgs: string[];
+
+  private positionalArgsParsed: number;
   private index: number;
 
   private prevUnquotedKey: string | undefined;
 
-  constructor(command: string, keys: Set<string>, flags: Set<string>) {
+  constructor(command: string, keys: Set<string>, flags: Set<string>, positionalArgs: string[]) {
     this.command = command;
     this.index = 0;
     this.keys = keys;
     this.flags = flags;
+    this.positionalArgs = positionalArgs;
+    this.positionalArgsParsed = 0;
   }
 
   /**
@@ -506,6 +527,7 @@ class CommandParser {
         this.consume(["!"]);
       }
 
+      const startIndex = this.index;
       const key = this.parseKey();
       if (result.has(key)) {
         throw `Duplicate key: ${key}`;
@@ -522,9 +544,16 @@ class CommandParser {
         const value = this.parseValue();
         if (!this.finished()) this.consume([" "]);
         result.set(key, value);
+      } else if (this.positionalArgsParsed < this.positionalArgs.length && this.peek() !== "=") {
+        // Parse [value] as the next positional arg
+        this.index = startIndex; // back up to reparse the key as a value
+        const value = this.parseValue();
+        if (!this.finished()) this.consume([" "]);
+        result.set(this.positionalArgs[this.positionalArgsParsed], value);
+        this.positionalArgsParsed++;
       } else {
         // Key not found; include a better error message if it is possible for quotes to have been missed
-        if (this.prevUnquotedKey)
+        if (this.prevUnquotedKey && this.peek() !== "=")
           throw `Unknown argument: ${key} (if this should have been part of ${this.prevUnquotedKey}, you should surround the entire value in quotes)`;
         else throw `Unknown argument: ${key}`;
       }
