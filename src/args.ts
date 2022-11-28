@@ -530,7 +530,7 @@ class CommandParser {
       const startIndex = this.index;
       const key = this.parseKey();
       if (result.has(key)) {
-        throw `Duplicate key: ${key}`;
+        throw `Duplicate key ${key} (first set to ${result.get(key) ?? ""})`;
       }
       if (this.flags.has(key)) {
         // The key corresponds to a flag.
@@ -546,11 +546,17 @@ class CommandParser {
         result.set(key, value);
       } else if (this.positionalArgsParsed < this.positionalArgs.length && this.peek() !== "=") {
         // Parse [value] as the next positional arg
+        const positionalKey = this.positionalArgs[this.positionalArgsParsed];
+        this.positionalArgsParsed++;
+
         this.index = startIndex; // back up to reparse the key as a value
         const value = this.parseValue();
         if (!this.finished()) this.consume([" "]);
-        result.set(this.positionalArgs[this.positionalArgsParsed], value);
-        this.positionalArgsParsed++;
+        if (result.has(positionalKey))
+          throw `Cannot assign ${value} to ${positionalKey} (positionally) since ${positionalKey} was already set to ${
+            result.get(positionalKey) ?? ""
+          }`;
+        result.set(positionalKey, value);
       } else {
         // Key not found; include a better error message if it is possible for quotes to have been missed
         if (this.prevUnquotedKey && this.peek() !== "=")
