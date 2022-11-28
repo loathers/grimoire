@@ -538,10 +538,13 @@ class CommandParser {
         result.set(key, parsing_negative_flag ? "false" : "true");
         if (this.peek() === "=") throw `Flag ${key} cannot be assigned a value`;
         if (!this.finished()) this.consume([" "]);
+        this.prevUnquotedKey = undefined;
       } else if (this.keys.has(key)) {
         // Parse [key]=[value] or [key] [value]
         this.consume(["=", " "]);
         const value = this.parseValue();
+        if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
+        else this.prevUnquotedKey = key;
         if (!this.finished()) this.consume([" "]);
         result.set(key, value);
       } else if (this.positionalArgsParsed < this.positionalArgs.length && this.peek() !== "=") {
@@ -551,7 +554,10 @@ class CommandParser {
 
         this.index = startIndex; // back up to reparse the key as a value
         const value = this.parseValue();
+        if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
+        else this.prevUnquotedKey = key;
         if (!this.finished()) this.consume([" "]);
+
         if (result.has(positionalKey))
           throw `Cannot assign ${value} to ${positionalKey} (positionally) since ${positionalKey} was already set to ${
             result.get(positionalKey) ?? ""
@@ -560,12 +566,9 @@ class CommandParser {
       } else {
         // Key not found; include a better error message if it is possible for quotes to have been missed
         if (this.prevUnquotedKey && this.peek() !== "=")
-          throw `Unknown argument: ${key} (if this should have been part of ${this.prevUnquotedKey}, you should surround the entire value in quotes)`;
+          throw `Unknown argument: ${key} (if this should have been parsed as part of ${this.prevUnquotedKey}, you should surround the entire value in quotes)`;
         else throw `Unknown argument: ${key}`;
       }
-
-      if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
-      else this.prevUnquotedKey = key;
     }
     return result;
   }
