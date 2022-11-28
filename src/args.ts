@@ -481,6 +481,9 @@ class CommandParser {
   private keys: Set<string>;
   private flags: Set<string>;
   private index: number;
+
+  private prevUnquotedKey: string | undefined;
+
   constructor(command: string, keys: Set<string>, flags: Set<string>) {
     this.command = command;
     this.index = 0;
@@ -513,13 +516,21 @@ class CommandParser {
         result.set(key, parsing_negative_flag ? "false" : "true");
         if (this.peek() === "=") throw `Flag ${key} cannot be assigned a value`;
         if (!this.finished()) this.consume([" "]);
-      } else {
+      } else if (this.keys.has(key)) {
         // Parse [key]=[value] or [key] [value]
         this.consume(["=", " "]);
         const value = this.parseValue();
         if (!this.finished()) this.consume([" "]);
         result.set(key, value);
+      } else {
+        // Key not found; include a better error message if it is possible for quotes to have been missed
+        if (this.prevUnquotedKey)
+          throw `Unknown argument: ${key} (if this should have been part of ${this.prevUnquotedKey}, you should surround the entire value in quotes)`;
+        else throw `Unknown argument: ${key}`;
       }
+
+      if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
+      else this.prevUnquotedKey = key;
     }
     return result;
   }
@@ -537,6 +548,15 @@ class CommandParser {
   private peek(): string | undefined {
     if (this.index >= this.command.length) return undefined;
     return this.command.charAt(this.index);
+  }
+
+  /**
+   * @returns The character just parsed, if it exists.
+   */
+  private prev(): string | undefined {
+    if (this.index <= 0) return undefined;
+    if (this.index >= this.command.length + 1) return undefined;
+    return this.command.charAt(this.index - 1);
   }
 
   /**
@@ -577,9 +597,6 @@ class CommandParser {
     const keyEnd = this.findNext(["=", " "]);
     const key = this.command.substring(this.index, keyEnd);
     this.index = keyEnd;
-    if (!this.keys.has(key) && !this.flags.has(key)) {
-      throw `Unknown key: ${key}`;
-    }
     return key;
   }
 
