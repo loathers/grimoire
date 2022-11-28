@@ -152,8 +152,9 @@ export class Args {
         const match = Class.get(value as ClassType);
         // Class.get does fuzzy matching:
         //  e.g. Class.get("sc") returns disco bandit.
-        // To avoid this foot-gun, only return exact matches.
+        // To avoid this foot-gun, only return exact matches or id lookups.
         if (match.toString().toUpperCase() === value.toString().toUpperCase()) return match;
+        if (!isNaN(Number(value))) return match;
         return undefined;
       },
       "CLASS"
