@@ -33,7 +33,7 @@ type ArgSpecNoDefault<T> = Omit<ArgSpec<T>, "default">;
 
 interface ArgOptions {
   defaultGroupName?: string; // Name to use in help text for the top-level group; defaults to "Options".
-  positionalArgs?: string[]; // Args that can be passed as positional args, without a key being provided at runtime. (Not recommended, but provided for backwards compatability).
+  positionalArgs?: string[]; // Key names of args that can be passed positionally, without the key being provided at runtime. (Not recommended, but provided for backwards compatability).
 }
 
 export class Args {
@@ -193,7 +193,7 @@ export class Args {
     if (options?.positionalArgs) {
       const keys: string[] = [];
       traverse(argsWithHelp, (keySpec, key) => {
-        keys.push(key);
+        keys.push(keySpec.key ?? key);
       });
       for (const arg of options.positionalArgs) {
         if (!keys.includes(arg)) throw `Unknown key for positional arg: ${arg}`;
