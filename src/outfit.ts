@@ -271,7 +271,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, and false otherwise.
    */
-  equip(thing: Item | Familiar | OutfitSpec | Item[] | Familiar[] | Outfit, slot?: Slot): boolean {
+  equip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
     if (Array.isArray(thing)) {
       if (slot !== undefined) return this.equipFirst(thing, slot);
       return thing.every((val) => this.equip(val));
