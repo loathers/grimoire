@@ -91,7 +91,7 @@ export class Outfit {
   avoid: Item[] = [];
 
   /**
-   * Check how many of an item is equipped on the outfit. 
+   * Check how many of an item is equipped on the outfit.
    */
   public equippedAmount(item: Item): number {
     return [...this.equips.values()].filter((i) => i === item).length;
@@ -104,7 +104,7 @@ export class Outfit {
     return true;
   }
 
-   /**
+  /**
    * Check whether an item is equipped on the outfit, optionally in a specific slot.
    */
   public haveEquipped(item: Item, slot?: Slot): boolean {
@@ -242,14 +242,14 @@ export class Outfit {
   }
 
   /**
-   * Equip the first thing that can be equipped to the outfit. 
-   * 
+   * Equip the first thing that can be equipped to the outfit.
+   *
    * @param things The things to equip.
    * @param slot The slot to equip them.
    * @returns True if one of the things is equipped, and false otherwise.
    */
   public equipFirst(things: Item[] | Familiar[], slot?: Slot): boolean {
-    return things.some((val) => this.equip(val, slot))
+    return things.some((val) => this.equip(val, slot));
   }
 
   /**
@@ -273,7 +273,7 @@ export class Outfit {
    */
   equip(thing: Item | Familiar | OutfitSpec | Item[] | Familiar[] | Outfit, slot?: Slot): boolean {
     if (Array.isArray(thing)) {
-      if (slot !== undefined) return this.equipFirst(thing, slot)
+      if (slot !== undefined) return this.equipFirst(thing, slot);
       return thing.every((val) => this.equip(val));
     }
     if (thing instanceof Item) return this.equipItem(thing, slot);
