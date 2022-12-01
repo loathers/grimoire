@@ -104,7 +104,7 @@ export class Args {
         if (parsed_value === undefined || parsed_value instanceof ParseError) return parsed_value;
         if (raw_options) {
           if (!raw_options.includes(parsed_value)) {
-            return new ParseError(`received ${value} which was not in the allowed options.`);
+            return new ParseError(`received ${value} which was not in the allowed options`);
           }
         }
         return parsed_value;
@@ -667,14 +667,7 @@ type Parser<T> = (value: string) => T | ParseError | undefined;
  * @member parser The parser to use to built T values.
  * @member valueHelpName The string name of T, e.g. NUMBER.
  */
-interface Arg<T> {
-  // From ArgSpec
-  key?: Exclude<string, "help">;
-  help?: string;
-  setting?: string;
-  hidden?: boolean;
-  default: T;
-
+interface Arg<T> extends Omit<ArgSpec<T>, "options"> {
   parser: Parser<T>;
   valueHelpName: string;
   options?: [string, string?][];
