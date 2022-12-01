@@ -139,7 +139,7 @@ export class Args {
     // problems, so we must remove it.
     const spec_without_default = { ...spec } as any; // Avoid "the operand of a 'delete' operator must be optional"
     if ("default" in spec_without_default) delete spec_without_default["default"];
-    const arg = argFromSpec(spec_without_default);
+    const arg = argFromSpec.call(this, spec_without_default);
 
     // Next, check that all default values actually appear in the options.
     const raw_options = spec.options?.map((option) => option[0]);
