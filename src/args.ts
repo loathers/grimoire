@@ -139,7 +139,7 @@ export class Args {
     // problems, so we must remove it.
     const spec_without_default = { ...spec } as any; // Avoid "the operand of a 'delete' operator must be optional"
     if ("default" in spec_without_default) delete spec_without_default["default"];
-    const arg = argFromSpec(spec_without_default);
+    const arg = argFromSpec.call(this, spec_without_default);
 
     // Next, check that all default values actually appear in the options.
     const raw_options = spec.options?.map((option) => option[0]);
@@ -149,9 +149,10 @@ export class Args {
       }
     }
 
+    const separator = spec.separator ?? ",";
     const arrayParser = (value: string): T[] | ParseError | undefined => {
       // Split the array
-      let values = value.split(spec.separator ?? ",");
+      let values = value.split(separator);
       if (!spec.noTrim) values = values.map((v) => v.trim());
 
       // Parse all values, return the first error found if any
@@ -170,7 +171,7 @@ export class Args {
 
     return {
       ...spec,
-      valueHelpName: arg.valueHelpName,
+      valueHelpName: `${arg.valueHelpName}${separator} ${arg.valueHelpName}${separator} ...`,
       parser: arrayParser,
       options: spec.options?.map((a) => [`${a[0]}`, a[1]]),
     };
