@@ -149,9 +149,10 @@ export class Args {
       }
     }
 
+    const separator = spec.separator ?? ",";
     const arrayParser = (value: string): T[] | ParseError | undefined => {
       // Split the array
-      let values = value.split(spec.separator ?? ",");
+      let values = value.split(separator);
       if (!spec.noTrim) values = values.map((v) => v.trim());
 
       // Parse all values, return the first error found if any
@@ -170,7 +171,7 @@ export class Args {
 
     return {
       ...spec,
-      valueHelpName: arg.valueHelpName,
+      valueHelpName: `${arg.valueHelpName}${separator} ${arg.valueHelpName}${separator} ...`,
       parser: arrayParser,
       options: spec.options?.map((a) => [`${a[0]}`, a[1]]),
     };
