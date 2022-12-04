@@ -1,6 +1,6 @@
 {
   "name": "grimoire-kolmafia",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "Library with task-based engine for KoLmafia.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,7 +31,7 @@
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-libram": "^0.2.18",
-    "kolmafia": "^5.26827.0",
+    "kolmafia": "^5.26781.0",
     "libram": "^0.7.6",
     "prettier": "^2.3.2",
     "typescript": "^4.4.2",
@@ -42,8 +42,8 @@
     "core-js": "^3.16.4"
   },
   "peerDependencies": {
-    "kolmafia": "^5.26827.0",
-    "libram": "^0.7.4"
+    "kolmafia": "^5.26781.0",
+    "libram": "^0.7.6"
   },
   "author": "LASS",
   "license": "ISC",
