@@ -91,6 +91,24 @@ export class Outfit {
   avoid: Item[] = [];
 
   /**
+   * Create an outfit from your current player state.
+   */
+  static current(): Outfit {
+    const outfit = new Outfit();
+    outfit.equip(myFamiliar());
+    for (const slotName of outfitSlots) {
+      const slot =
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName);
+      outfit.equip(equippedItem(slot), slot);
+    }
+    outfit.setModes(getCurrentModes());
+    return outfit;
+  }
+
+  /**
    * Check how many of an item is equipped on the outfit.
    */
   public equippedAmount(item: Item): number {
