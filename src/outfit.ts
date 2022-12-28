@@ -95,15 +95,24 @@ export class Outfit {
    */
   static current(): Outfit {
     const outfit = new Outfit();
-    outfit.equip(myFamiliar());
+
+    const familiar = myFamiliar();
+    if (outfit.equip(familiar)) {
+      throw `Failed to create outfit from current state (expected: familiar ${familiar})`;
+    }
+
     for (const slotName of outfitSlots) {
       const slot =
         new Map([
           ["famequip", $slot`familiar`],
           ["offhand", $slot`off-hand`],
         ]).get(slotName) ?? toSlot(slotName);
-      outfit.equip(equippedItem(slot), slot);
+      const item = equippedItem(slot);
+      if (!outfit.equip(item, slot)) {
+        throw `Failed to create outfit from current state (expected: ${slot} ${item})`;
+      }
     }
+
     outfit.setModes(getCurrentModes());
     return outfit;
   }
