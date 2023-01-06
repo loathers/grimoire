@@ -591,7 +591,9 @@ export class Args {
       (arg, key) => {
         if (arg.hidden) return;
 
-        const nameText = `<font color='${isDarkMode() ? "yellow" : "blue"}'>${arg.key ?? key}</font>`;
+        const nameText = `<font color='${isDarkMode() ? "yellow" : "blue"}'>${
+          arg.key ?? key
+        }</font>`;
         const valueText =
           arg.valueHelpName === "FLAG" ? "" : `<font color='purple'>${arg.valueHelpName}</font>`;
         const helpText = arg.help ?? "";
