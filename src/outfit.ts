@@ -91,6 +91,33 @@ export class Outfit {
   avoid: Item[] = [];
 
   /**
+   * Create an outfit from your current player state.
+   */
+  static current(): Outfit {
+    const outfit = new Outfit();
+
+    const familiar = myFamiliar();
+    if (outfit.equip(familiar)) {
+      throw `Failed to create outfit from current state (expected: familiar ${familiar})`;
+    }
+
+    for (const slotName of outfitSlots) {
+      const slot =
+        new Map([
+          ["famequip", $slot`familiar`],
+          ["offhand", $slot`off-hand`],
+        ]).get(slotName) ?? toSlot(slotName);
+      const item = equippedItem(slot);
+      if (!outfit.equip(item, slot)) {
+        throw `Failed to create outfit from current state (expected: ${slot} ${item})`;
+      }
+    }
+
+    outfit.setModes(getCurrentModes());
+    return outfit;
+  }
+
+  /**
    * Check how many of an item is equipped on the outfit.
    */
   public equippedAmount(item: Item): number {
