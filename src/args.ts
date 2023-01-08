@@ -4,6 +4,7 @@ import {
   ClassType,
   Effect,
   Familiar,
+  getProperty,
   isDarkMode,
   Item,
   Location,
@@ -12,7 +13,6 @@ import {
   printHtml,
   Skill,
 } from "kolmafia";
-import { get } from "libram";
 
 /**
  * Specification for an argument that takes values in T.
@@ -497,9 +497,9 @@ export class Args {
 
     // Parse values from settings.
     metadata.traverseAndMaybeSet(res, (keySpec, key) => {
-      const setting = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
+      const setting: string = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
       if (setting === "") return undefined; // no setting
-      const value_str = get(setting, "");
+      const value_str = getProperty(setting);
       if (value_str === "") return undefined; // no setting
       return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
     });
