@@ -618,7 +618,7 @@ export class Args {
         const valueOptions = arg.options ?? [];
         if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
           for (const option of valueOptions) {
-            if (option.length === 1) {
+            if (option.length === 1 || option[1] === undefined) {
               printHtml(
                 `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`
               );
