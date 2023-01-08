@@ -163,7 +163,7 @@ export class Args {
       const failure_index = result.indexOf(undefined);
       if (failure_index !== -1)
         return new ParseError(
-          `components expected ${arg.parser.name}$ but could not parse ${values[failure_index]}`
+          `components expected ${arg.valueHelpName} but could not parse ${values[failure_index]}`
         );
 
       // Otherwise, all values are good
@@ -740,7 +740,7 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
   }
 
   if (parsed_value === undefined)
-    throw `${source} expected ${arg.parser.name}$ but could not parse ${value}`;
+    throw `${source} expected ${arg.valueHelpName} but could not parse ${value}`;
   if (parsed_value instanceof ParseError) throw `${source} ${parsed_value.message}`;
   return parsed_value;
 }
