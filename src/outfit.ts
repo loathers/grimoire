@@ -249,7 +249,10 @@ export class Outfit {
   private equipFamiliar(familiar: Familiar): boolean {
     if (familiar === this.familiar) return true;
     if (this.familiar !== undefined) return false;
-    if (familiar !== $familiar.none && !have(familiar)) return false;
+    if (familiar !== $familiar.none) {
+      if (!have(familiar)) return false;
+      if (Array.from(this.riders.values()).includes(familiar)) return false;
+    }
     const item = this.equips.get($slot`familiar`);
     if (item !== undefined && item !== $item.none && !canEquip(familiar, item)) return false;
     this.familiar = familiar;
@@ -327,11 +330,31 @@ export class Outfit {
     return this.equipSpec(thing);
   }
 
+  /**
+   * Add a bjornified familiar to the outfit.
+   *
+   * This function does *not* equip the buddy bjorn itself; it must be equipped separately.
+   *
+   * If a familiar is already specified for the buddy bjorn that is different from the provided target, this function will return false and not change the buddy bjorn.
+   * @param target The familiar to bjornify, or a ranked list of familiars to try to bjornify.
+   * @returns True if we successfully set the bjorn to a valid target.
+   */
   bjornify(target: Familiar | Familiar[]): boolean {
-    if (this.equips.get($slot`back`) !== $item`Buddy Bjorn`) return false;
+    const current = this.riders.get($slot`buddy-bjorn`);
+    if (current) {
+      if (
+        Array.isArray(target)
+          ? (target as (Familiar | undefined)[]).includes(current)
+          : current === target
+      ) {
+        return true;
+      }
+      return false;
+    }
+
     if (Array.isArray(target)) {
       const fam = target.find(
-        (f) => have(f) && this.familiar !== f && !Array.from(this.riders.values()).includes(f)
+        (f) => have(f) && this.familiar !== f && this.riders.get($slot`crown-of-thrones`) !== f
       );
       if (fam) {
         this.riders.set($slot`buddy-bjorn`, fam);
@@ -351,11 +374,31 @@ export class Outfit {
     }
   }
 
+  /**
+   * Add anenthroned familiar to the outfit.
+   *
+   * This function does *not* equip the crown of thrones itself; it must be equipped separately.
+   *
+   * If a familiar is already specified for the crown of thrones that is different from the provided target, this function will return false and not change the crown of thrones.
+   * @param target The familiar to enthrone, or a ranked list of familiars to try to enthrone.
+   * @returns True if we successfully set the enthrone to a valid target.
+   */
   enthrone(target: Familiar | Familiar[]): boolean {
-    if (this.equips.get($slot`hat`) !== $item`Crown of Thrones`) return false;
+    const current = this.riders.get($slot`crown-of-thrones`);
+    if (current) {
+      if (
+        Array.isArray(target)
+          ? (target as (Familiar | undefined)[]).includes(current)
+          : current === target
+      ) {
+        return true;
+      }
+      return false;
+    }
+
     if (Array.isArray(target)) {
       const fam = target.find(
-        (f) => have(f) && this.familiar !== f && !Array.from(this.riders.values()).includes(f)
+        (f) => have(f) && this.familiar !== f && this.riders.get($slot`buddy-bjorn`) !== f
       );
       if (fam) {
         this.riders.set($slot`crown-of-thrones`, fam);
@@ -517,11 +560,13 @@ export class Outfit {
     if (bjorn) {
       if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
       if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
+      usedSlots.add($slot`buddy-bjorn`);
     }
     const crown = this.riders.get($slot`crown-of-thrones`);
     if (crown) {
       if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
       if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
+      usedSlots.add($slot`crown-of-thrones`);
     }
 
     // Remaining slots are filled by the maximizer
