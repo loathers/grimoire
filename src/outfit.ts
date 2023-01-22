@@ -310,6 +310,18 @@ export class Outfit {
   }
 
   /**
+   * Create a new outfit that confirms to a given spec. Return null if the outfit cannot be successfully created as such
+   * @param spec The spec around which to build the outfit.
+   * @returns A new outfit containing the inputted spec, or null if that is impossible.
+   */
+  static from(spec: OutfitSpec): Outfit | null {
+    const outfit = new Outfit();
+
+    const success = outfit.equip(spec);
+    return success ? outfit : null;
+  }
+
+  /**
    * Set the provided modes for items that may be equipped in the outfit.
    *
    * This function does *not* equip items for the set modes; they must be
