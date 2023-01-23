@@ -316,8 +316,8 @@ export class Outfit {
    * @returns A new outfit containing the inputted spec, or null if that is impossible.
    */
   static from(spec: OutfitSpec): Outfit | null;
-  static from<T extends Error>(spec: OutfitSpec, error: T): Outfit | never;
-  static from<T extends Error>(spec: OutfitSpec, error: T | null = null): Outfit | null | never {
+  static from<T extends Error>(spec: OutfitSpec, error: T): Outfit;
+  static from<T extends Error>(spec: OutfitSpec, error: T | null = null): Outfit | null {
     const outfit = new Outfit();
 
     const success = outfit.equip(spec);
