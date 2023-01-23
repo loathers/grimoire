@@ -317,8 +317,8 @@ export class Outfit {
    */
   static from(spec: OutfitSpec): Outfit | null;
   static from(spec: OutfitSpec, error: null): Outfit | null;
-  static from<T extends Error>(spec: OutfitSpec, error: T): Outfit;
-  static from<T extends Error>(spec: OutfitSpec, error: T | null = null): Outfit | null {
+  static from(spec: OutfitSpec, error: Error): Outfit;
+  static from(spec: OutfitSpec, error: Error | null = null): Outfit | null {
     const outfit = new Outfit();
 
     const success = outfit.equip(spec);
