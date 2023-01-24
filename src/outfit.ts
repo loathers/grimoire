@@ -1,13 +1,18 @@
 import {
+  bjornifyFamiliar,
   booleanModifier,
   canEquip,
+  enthroneFamiliar,
   equip,
   equippedItem,
   Familiar,
+  haveEquipped,
   Item,
   logprint,
   equippedAmount as mafiaEquippedAmount,
   weaponHands as mafiaWeaponHands,
+  myBjornedFamiliar,
+  myEnthronedFamiliar,
   myFamiliar,
   Slot,
   toSlot,
@@ -44,6 +49,12 @@ export type OutfitSlot = typeof outfitSlots[number];
 
 export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
+export const riderSlots = ["buddy-bjorn", "crown-of-thrones"] as const;
+
+export type RiderSlot = typeof riderSlots[number];
+
+export type OutfitRiders = Partial<{ [slot in RiderSlot]: Familiar | Familiar[] }>;
+
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
   modes?: Modes; // Modes to set on particular items
@@ -51,6 +62,7 @@ export interface OutfitSpec extends OutfitEquips {
   familiar?: Familiar; // Familiar to use
   avoid?: Item[]; // Items that cause issues and so should not be equipped
   skipDefaults?: boolean; // Do not equip default equipment; fully maximize
+  riders?: OutfitRiders; // Familiars to bjornify-enthrone
 }
 
 export type Modes = {
@@ -84,6 +96,7 @@ const modeableCommands = [
 
 export class Outfit {
   equips: Map<Slot, Item> = new Map<Slot, Item>();
+  riders: Map<Slot, Familiar> = new Map<Slot, Familiar>();
   modes: Modes = {};
   skipDefaults = false;
   familiar?: Familiar;
@@ -112,6 +125,11 @@ export class Outfit {
         throw `Failed to create outfit from current state (expected: ${slot} ${item})`;
       }
     }
+
+    if (haveEquipped($item`Crown of Thrones`))
+      outfit.riders.set($slot`crown-of-thrones`, myEnthronedFamiliar());
+    if (haveEquipped($item`Buddy Bjorn`))
+      outfit.riders.set($slot`buddy-bjorn`, myBjornedFamiliar());
 
     outfit.setModes(getCurrentModes());
     return outfit;
@@ -231,7 +249,10 @@ export class Outfit {
   private equipFamiliar(familiar: Familiar): boolean {
     if (familiar === this.familiar) return true;
     if (this.familiar !== undefined) return false;
-    if (familiar !== $familiar.none && !have(familiar)) return false;
+    if (familiar !== $familiar.none) {
+      if (!have(familiar)) return false;
+      if (Array.from(this.riders.values()).includes(familiar)) return false;
+    }
     const item = this.equips.get($slot`familiar`);
     if (item !== undefined && item !== $item.none && !canEquip(familiar, item)) return false;
     this.familiar = familiar;
@@ -307,6 +328,94 @@ export class Outfit {
     if (thing instanceof Familiar) return this.equipFamiliar(thing);
     if (thing instanceof Outfit) return this.equipSpec(thing.spec());
     return this.equipSpec(thing);
+  }
+
+  /**
+   * Add a bjornified familiar to the outfit.
+   *
+   * This function does *not* equip the buddy bjorn itself; it must be equipped separately.
+   *
+   * If a familiar is already specified for the buddy bjorn that is different from the provided target, this function will return false and not change the buddy bjorn.
+   * @param target The familiar to bjornify, or a ranked list of familiars to try to bjornify.
+   * @returns True if we successfully set the bjorn to a valid target.
+   */
+  bjornify(target: Familiar | Familiar[]): boolean {
+    const current = this.riders.get($slot`buddy-bjorn`);
+    if (current) {
+      if (
+        Array.isArray(target)
+          ? (target as (Familiar | undefined)[]).includes(current)
+          : current === target
+      ) {
+        return true;
+      }
+      return false;
+    }
+
+    if (Array.isArray(target)) {
+      const fam = target.find(
+        (f) => have(f) && this.familiar !== f && this.riders.get($slot`crown-of-thrones`) !== f
+      );
+      if (fam) {
+        this.riders.set($slot`buddy-bjorn`, fam);
+        return true;
+      }
+      return false;
+    } else {
+      if (
+        have(target) &&
+        this.familiar !== target &&
+        !Array.from(this.riders.values()).includes(target)
+      ) {
+        this.riders.set($slot`buddy-bjorn`, target);
+        return true;
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Add anenthroned familiar to the outfit.
+   *
+   * This function does *not* equip the crown of thrones itself; it must be equipped separately.
+   *
+   * If a familiar is already specified for the crown of thrones that is different from the provided target, this function will return false and not change the crown of thrones.
+   * @param target The familiar to enthrone, or a ranked list of familiars to try to enthrone.
+   * @returns True if we successfully set the enthrone to a valid target.
+   */
+  enthrone(target: Familiar | Familiar[]): boolean {
+    const current = this.riders.get($slot`crown-of-thrones`);
+    if (current) {
+      if (
+        Array.isArray(target)
+          ? (target as (Familiar | undefined)[]).includes(current)
+          : current === target
+      ) {
+        return true;
+      }
+      return false;
+    }
+
+    if (Array.isArray(target)) {
+      const fam = target.find(
+        (f) => have(f) && this.familiar !== f && this.riders.get($slot`buddy-bjorn`) !== f
+      );
+      if (fam) {
+        this.riders.set($slot`crown-of-thrones`, fam);
+        return true;
+      }
+      return false;
+    } else {
+      if (
+        have(target) &&
+        this.familiar !== target &&
+        !Array.from(this.riders.values()).includes(target)
+      ) {
+        this.riders.set($slot`crown-of-thrones`, target);
+        return true;
+      }
+      return false;
+    }
   }
 
   /**
@@ -390,7 +499,7 @@ export class Outfit {
     const usedSlots = new Set<Slot>();
 
     // First, we equip non-accessory equipment.
-    const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar, buddy-bjorn, crown-of-thrones`;
+    const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar`;
 
     // We must manually remove equipment that we want to use in a different
     // slot than where it is currently equipped, to avoid a mafia issue.
@@ -446,6 +555,20 @@ export class Outfit {
       usedSlots.add(unusedSlot);
     }
 
+    // Handle the rider slots next
+    const bjorn = this.riders.get($slot`buddy-bjorn`);
+    if (bjorn) {
+      if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
+      if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
+      usedSlots.add($slot`buddy-bjorn`);
+    }
+    const crown = this.riders.get($slot`crown-of-thrones`);
+    if (crown) {
+      if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
+      if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
+      usedSlots.add($slot`crown-of-thrones`);
+    }
+
     // Remaining slots are filled by the maximizer
     const modes = convertToLibramModes(this.modes);
     if (this.modifier) {
@@ -480,6 +603,15 @@ export class Outfit {
         mafiaEquippedAmount(accessory) < accessoryEquips.filter((acc) => acc === accessory).length
       ) {
         throw `Failed to fully dress (expected: acc ${accessory})`;
+      }
+    }
+    for (const [rider, checkingFunction] of [
+      [$slot`buddy-bjorn`, myBjornedFamiliar],
+      [$slot`crown-of-thrones`, myEnthronedFamiliar],
+    ] as const) {
+      const wanted = this.riders.get(rider);
+      if (wanted && checkingFunction() !== wanted) {
+        throw `Failed to fully dress: (expected ${rider} ${wanted})`;
       }
     }
   }
