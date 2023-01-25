@@ -331,6 +331,23 @@ export class Outfit {
   }
 
   /**
+   * Create a new outfit that confirms to a given spec. Return null if the outfit cannot be successfully created as such
+   * @param spec The spec around which to build the outfit.
+   * @param error An error to throw if we fail to equip the outfit; if this parameter is null, the return type will be Outfit | null
+   * @returns A new outfit containing the inputted spec, or null if that is impossible.
+   */
+  static from(spec: OutfitSpec): Outfit | null;
+  static from(spec: OutfitSpec, error: null): Outfit | null;
+  static from(spec: OutfitSpec, error: Error): Outfit;
+  static from(spec: OutfitSpec, error: Error | null = null): Outfit | null {
+    const outfit = new Outfit();
+
+    const success = outfit.equip(spec);
+    if (!success && error) throw error;
+    return success ? outfit : null;
+  }
+
+  /**
    * Add a bjornified familiar to the outfit.
    *
    * This function does *not* equip the buddy bjorn itself; it must be equipped separately.
