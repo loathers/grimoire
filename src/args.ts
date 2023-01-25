@@ -4,6 +4,7 @@ import {
   ClassType,
   Effect,
   Familiar,
+  getProperty,
   isDarkMode,
   Item,
   Location,
@@ -12,7 +13,6 @@ import {
   printHtml,
   Skill,
 } from "kolmafia";
-import { get } from "libram";
 
 /**
  * Specification for an argument that takes values in T.
@@ -163,7 +163,7 @@ export class Args {
       const failure_index = result.indexOf(undefined);
       if (failure_index !== -1)
         return new ParseError(
-          `components expected ${arg.parser.name}$ but could not parse ${values[failure_index]}`
+          `components expected ${arg.valueHelpName} but could not parse ${values[failure_index]}`
         );
 
       // Otherwise, all values are good
@@ -493,19 +493,9 @@ export class Args {
       [optionsSymbol]: options ?? {},
     } as any;
 
-    const metadata = Args.getMetadata(res);
-
-    // Parse values from settings.
-    metadata.traverseAndMaybeSet(res, (keySpec, key) => {
-      const setting = keySpec.setting ?? `${scriptName}_${keySpec.key ?? key}`;
-      if (setting === "") return undefined; // no setting
-      const value_str = get(setting, "");
-      if (value_str === "") return undefined; // no setting
-      return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
-    });
-
     if (options?.positionalArgs) {
       const keys: string[] = [];
+      const metadata = Args.getMetadata(res);
       metadata.traverse((keySpec, key) => {
         keys.push(keySpec.key ?? key);
       });
@@ -520,8 +510,13 @@ export class Args {
    * Parse the command line input into the provided script arguments.
    * @param args An object to hold the parsed argument values, from Args.create(*).
    * @param command The command line input.
+   * @param includeSettings If true, parse values from settings as well.
    */
-  static fill<T extends ArgMap>(args: ParsedArgs<T>, command: string | undefined): void {
+  static fill<T extends ArgMap>(
+    args: ParsedArgs<T>,
+    command: string | undefined,
+    includeSettings = true
+  ): void {
     if (command === undefined || command === "") return;
 
     const metadata = Args.getMetadata(args);
@@ -535,6 +530,17 @@ export class Args {
       if (keySpec.valueHelpName === "FLAG") flags.add(name);
       else keys.add(name);
     });
+
+    // Parse values from settings.
+    if (includeSettings) {
+      metadata.traverseAndMaybeSet(args, (keySpec, key) => {
+        const setting: string = keySpec.setting ?? `${metadata.scriptName}_${keySpec.key ?? key}`;
+        if (setting === "") return undefined; // no setting
+        const value_str = getProperty(setting);
+        if (value_str === "") return undefined; // no setting
+        return parseAndValidate(keySpec, `Setting ${setting}`, value_str);
+      });
+    }
 
     // Parse new argments from the command line
     const parsed = new CommandParser(
@@ -612,7 +618,7 @@ export class Args {
         const valueOptions = arg.options ?? [];
         if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
           for (const option of valueOptions) {
-            if (option.length === 1) {
+            if (option.length === 1 || option[1] === undefined) {
               printHtml(
                 `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`
               );
@@ -740,7 +746,7 @@ function parseAndValidate<T>(arg: Arg<T> | ArgNoDefault<T>, source: string, valu
   }
 
   if (parsed_value === undefined)
-    throw `${source} expected ${arg.parser.name}$ but could not parse ${value}`;
+    throw `${source} expected ${arg.valueHelpName} but could not parse ${value}`;
   if (parsed_value instanceof ParseError) throw `${source} ${parsed_value.message}`;
   return parsed_value;
 }
