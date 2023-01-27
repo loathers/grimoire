@@ -517,8 +517,6 @@ export class Args {
     command: string | undefined,
     includeSettings = true
   ): void {
-    if (command === undefined || command === "") return;
-
     const metadata = Args.getMetadata(args);
 
     // Load the list of keys and flags from the arg spec
@@ -543,6 +541,7 @@ export class Args {
     }
 
     // Parse new argments from the command line
+    if (command === undefined || command === "") return;
     const parsed = new CommandParser(
       command,
       keys,
