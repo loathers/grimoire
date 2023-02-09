@@ -60,11 +60,12 @@ export type Equippable = Item | Familiar | OutfitSpec | Item[] | Outfit;
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
   modes?: Modes; // Modes to set on particular items
-  modifier?: string; // Modifier to maximize
+  modifier?: string | string[]; // Modifier to maximize
   familiar?: Familiar; // Familiar to use
   avoid?: Item[]; // Items that cause issues and so should not be equipped
   skipDefaults?: boolean; // Do not equip default equipment; fully maximize
   riders?: OutfitRiders; // Familiars to bjornify-enthrone
+  bonuses?: Map<Item, number>;
 }
 
 export type Modes = {
@@ -102,8 +103,9 @@ export class Outfit {
   modes: Modes = {};
   skipDefaults = false;
   familiar?: Familiar;
-  modifier = "";
+  modifier: string[] = [];
   avoid: Item[] = [];
+  bonuses = new Map<Item, number>();
 
   /**
    * Create an outfit from your current player state.
@@ -226,6 +228,22 @@ export class Outfit {
     }
   }
 
+  public getBonus(item: Item): number {
+    return this.bonuses.get(item) ?? 0;
+  }
+
+  public setBonus(item: Item, value: number): boolean {
+    const can = this.canEquip(item);
+    if (can) this.bonuses.set(item, value);
+    return can;
+  }
+
+  public addBonus(item: Item, value: number): number {
+    const previous = this.getBonus(item);
+    if (this.setBonus(item, previous + value)) return previous;
+    return previous + value;
+  }
+
   private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
     if (![undefined, $slot`familiar`].includes(slot)) return false;
     if (this.equips.has($slot`familiar`)) return false;
@@ -281,11 +299,17 @@ export class Outfit {
     this.avoid.push(...(spec?.avoid ?? []));
     this.skipDefaults = this.skipDefaults || (spec.skipDefaults ?? false);
     if (spec.modifier) {
-      this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
+      if (Array.isArray(spec.modifier)) this.modifier.push(...spec.modifier);
+      else this.modifier.push(spec.modifier);
     }
     if (spec.modes) {
       if (!this.setModes(spec.modes)) {
         succeeded = false;
+      }
+    }
+    if (spec.bonuses) {
+      for (const [item, value] of spec.bonuses) {
+        succeeded &&= value + this.getBonus(item) === this.addBonus(item, value);
       }
     }
     return succeeded;
@@ -604,10 +628,11 @@ export class Outfit {
     const modes = convertToLibramModes(this.modes);
     if (this.modifier) {
       const allRequirements = [
-        new Requirement([this.modifier], {
+        new Requirement(this.modifier, {
           preventSlot: [...usedSlots],
           preventEquip: this.avoid,
           modes: modes,
+          bonusEquip: this.bonuses,
         }),
       ];
       if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
@@ -655,9 +680,10 @@ export class Outfit {
     result.equips = new Map(this.equips);
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
-    result.modifier = this.modifier;
+    result.modifier = [...this.modifier];
     result.avoid = [...this.avoid];
     result.modes = { ...this.modes };
+    result.bonuses = new Map(this.bonuses)
     return result;
   }
 
@@ -666,11 +692,12 @@ export class Outfit {
    */
   spec(): OutfitSpec {
     const result: OutfitSpec = {
-      modifier: this.modifier,
+      modifier: [...this.modifier],
       familiar: this.familiar,
       avoid: [...this.avoid],
       skipDefaults: this.skipDefaults,
       modes: { ...this.modes },
+      bonuses: new Map(this.bonuses),
     };
 
     // Add all equipment forced in a particular slot

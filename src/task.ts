@@ -1,5 +1,5 @@
 import { Effect, Item, Location } from "kolmafia";
-import { get } from "libram";
+import { get, MaximizeOptions } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
@@ -42,6 +42,7 @@ export type Task<A extends string = never> = {
   limit?: Limit;
   outfit?: OutfitSpec | Outfit | (() => OutfitSpec | Outfit);
   combat?: CombatStrategy<A>;
+  outfitOptions?: Partial<MaximizeOptions> | (() => Partial<MaximizeOptions>);
 };
 
 /**
