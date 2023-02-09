@@ -1,5 +1,6 @@
 import { Item, Location, Monster, Skill } from "kolmafia";
 import { Macro } from "libram";
+import { undelay } from "./lib";
 
 /**
  * A macro, or something that can become a macro.
@@ -7,10 +8,6 @@ import { Macro } from "libram";
  * but before any task-specific preparation.
  */
 export type DelayedMacro = Macro | (() => Macro);
-function undelay(macro: DelayedMacro): Macro {
-  if (macro instanceof Macro) return macro;
-  else return macro();
-}
 
 /**
  * The strategy to use for combat for a task, which indicates what to do
