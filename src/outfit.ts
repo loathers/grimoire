@@ -2,6 +2,7 @@ import {
   bjornifyFamiliar,
   booleanModifier,
   canEquip,
+  cliExecute,
   enthroneFamiliar,
   equip,
   equippedItem,
@@ -28,9 +29,10 @@ import {
   get,
   have,
   Modes as LibramModes,
-  MaximizeOptions,
   Requirement,
 } from "libram";
+
+const FORCE_REFRESH_REQUIREMENT = new Requirement([], { forceUpdate: true });
 
 export const outfitSlots = [
   "hat",
@@ -228,20 +230,41 @@ export class Outfit {
     }
   }
 
+  /**
+   * Returns the bonus value associated with a given item.
+   * @param item The item to check the bonus of.
+   * @returns The bonus assigned to that item.
+   */
   public getBonus(item: Item): number {
     return this.bonuses.get(item) ?? 0;
   }
 
+  /**
+   * Sets the bonus value of an item equal to a given value, overriding any current bonus assigned.
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to apply a bonus to.
+   * @param value The value to try to apply.
+   * @returns Whether the bonus was successfully asigned.
+   */
   public setBonus(item: Item, value: number): boolean {
     const can = this.canEquip(item);
     if (can) this.bonuses.set(item, value);
     return can;
   }
 
+  /**
+   * Adds a value to any existing bonus this item has; if it started without a bonus, sets the bonus equal to that value.
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to add a bonus to.
+   * @param value The value to try to add.
+   * @returns The total assigned bonus to that item.
+   */
   public addBonus(item: Item, value: number): number {
     const previous = this.getBonus(item);
-    if (this.setBonus(item, previous + value)) return previous;
-    return previous + value;
+    this.setBonus(item, previous + value);
+    return this.getBonus(item);
   }
 
   private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
@@ -546,9 +569,8 @@ export class Outfit {
 
   /**
    * Equip this outfit.
-   * @param extraOptions Passed to any maximizer calls made.
    */
-  dress(extraOptions?: Partial<MaximizeOptions>): void {
+  dress(): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
     const usedSlots = new Set<Slot>();
@@ -635,10 +657,12 @@ export class Outfit {
           bonusEquip: this.bonuses,
         }),
       ];
-      if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
 
       if (!Requirement.merge(allRequirements).maximize()) {
-        throw `Unable to maximize ${this.modifier}`;
+        cliExecute("refresh inventory");
+        if (!Requirement.merge([...allRequirements, FORCE_REFRESH_REQUIREMENT]).maximize) {
+          throw `Unable to maximize ${this.modifier}`;
+        }
       }
       logprint(`Maximize: ${this.modifier}`);
     }
@@ -683,7 +707,7 @@ export class Outfit {
     result.modifier = [...this.modifier];
     result.avoid = [...this.avoid];
     result.modes = { ...this.modes };
-    result.bonuses = new Map(this.bonuses)
+    result.bonuses = new Map(this.bonuses);
     return result;
   }
 

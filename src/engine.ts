@@ -218,9 +218,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    */
   dress(task: T, outfit: Outfit): void {
     if (task.do instanceof Location) setLocation(task.do);
-    const extraOptions =
-      typeof task.outfitOptions === "function" ? task.outfitOptions() : task.outfitOptions;
-    outfit.dress(extraOptions);
+    outfit.dress();
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
