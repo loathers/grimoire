@@ -584,6 +584,7 @@ export class Outfit {
       (this.equips.get($slot`back`) === $item`Buddy Bjorn` || this.getBonus($item`Buddy Bjorn`))
     ) {
       usedSlots.add($slot`buddy-bjorn`);
+      usedSlots.add($slot`crown-of-thrones`);
     }
 
     const crown = this.riders.get($slot`crown-of-thrones`);
@@ -592,6 +593,7 @@ export class Outfit {
       (this.equips.get($slot`hat`) === $item`Crown of Thrones` ||
         this.getBonus($item`Crown of Thrones`))
     ) {
+      usedSlots.add($slot`buddy-bjorn`);
       usedSlots.add($slot`crown-of-thrones`);
     }
 
