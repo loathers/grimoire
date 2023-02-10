@@ -55,6 +55,8 @@ export type RiderSlot = typeof riderSlots[number];
 
 export type OutfitRiders = Partial<{ [slot in RiderSlot]: Familiar | Familiar[] }>;
 
+export type Equippable = Item | Familiar | OutfitSpec | Item[] | Outfit;
+
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
   modes?: Modes; // Modes to set on particular items
@@ -319,7 +321,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, and false otherwise.
    */
-  equip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
+  equip(thing: Equippable, slot?: Slot): boolean {
     if (Array.isArray(thing)) {
       if (slot !== undefined) return this.equipFirst(thing, slot);
       return thing.every((val) => this.equip(val));
@@ -501,9 +503,21 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if this thing can be equipped.
    */
-  canEquip(thing: Item | Familiar | OutfitSpec | Item[] | Outfit, slot?: Slot): boolean {
+  canEquip(thing: Equippable, slot?: Slot): boolean {
     const outfit = this.clone();
     return outfit.equip(thing, slot);
+  }
+
+  /**
+   * Check if it is possible to equip a thing to this outfit using .equip(); if it is, do so.
+   *
+   * This does change the current outfit.
+   * @param thing The thing to equip.
+   * @param slot The slot to equip them.
+   * @returns True if this thing was successfully equipped.
+   */
+  tryEquip(thing: Equippable, slot?: Slot): boolean {
+    return this.canEquip(thing, slot) && this.equip(thing, slot);
   }
 
   /**
