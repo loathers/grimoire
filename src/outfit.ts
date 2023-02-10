@@ -570,7 +570,7 @@ export class Outfit {
   /**
    * Equip this outfit.
    */
-  dress(): void {
+  private _dress(refreshed: boolean): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
     const usedSlots = new Set<Slot>();
@@ -658,11 +658,14 @@ export class Outfit {
         }),
       ];
 
+      if (refreshed) allRequirements.push(FORCE_REFRESH_REQUIREMENT);
+
       if (!Requirement.merge(allRequirements).maximize()) {
-        cliExecute("refresh inventory");
-        if (!Requirement.merge([...allRequirements, FORCE_REFRESH_REQUIREMENT]).maximize) {
-          throw `Unable to maximize ${this.modifier}`;
-        }
+        if (!refreshed) {
+          cliExecute("refresh inventory");
+          this._dress(true);
+          return;
+        } else throw new Error("Failed to maximize properly!");
       }
       logprint(`Maximize: ${this.modifier}`);
     }
@@ -694,6 +697,10 @@ export class Outfit {
         throw `Failed to fully dress: (expected ${rider} ${wanted})`;
       }
     }
+  }
+
+  public dress(): void {
+    this._dress(false);
   }
 
   /**
