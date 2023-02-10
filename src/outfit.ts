@@ -578,6 +578,23 @@ export class Outfit {
     // First, we equip non-accessory equipment.
     const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar`;
 
+    const bjorn = this.riders.get($slot`buddy-bjorn`);
+    if (
+      bjorn &&
+      (this.equips.get($slot`back`) === $item`Buddy Bjorn` || this.getBonus($item`Buddy Bjorn`))
+    ) {
+      usedSlots.add($slot`buddy-bjorn`);
+    }
+
+    const crown = this.riders.get($slot`crown-of-thrones`);
+    if (
+      crown &&
+      (this.equips.get($slot`hat`) === $item`Crown of Thrones` ||
+        this.getBonus($item`Crown of Thrones`))
+    ) {
+      usedSlots.add($slot`crown-of-thrones`);
+    }
+
     // We must manually remove equipment that we want to use in a different
     // slot than where it is currently equipped, to avoid a mafia issue.
     // Order is anchored here to prevent DFSS shenanigans
@@ -632,20 +649,6 @@ export class Outfit {
       usedSlots.add(unusedSlot);
     }
 
-    // Handle the rider slots next
-    const bjorn = this.riders.get($slot`buddy-bjorn`);
-    if (bjorn) {
-      if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
-      if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
-      usedSlots.add($slot`buddy-bjorn`);
-    }
-    const crown = this.riders.get($slot`crown-of-thrones`);
-    if (crown) {
-      if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
-      if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
-      usedSlots.add($slot`crown-of-thrones`);
-    }
-
     // Remaining slots are filled by the maximizer
     const modes = convertToLibramModes(this.modes);
     if (this.modifier) {
@@ -672,6 +675,15 @@ export class Outfit {
 
     // Set the modes of any equipped items.
     applyModes(modes);
+    // Handle the rider slots next
+    if (bjorn) {
+      if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
+      if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
+    }
+    if (crown) {
+      if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
+      if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
+    }
 
     // Verify that all equipment was indeed equipped
     if (this.familiar !== undefined && myFamiliar() !== this.familiar)
