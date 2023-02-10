@@ -24,6 +24,7 @@ import {
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
+import { undelay } from "./lib";
 
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;
@@ -150,7 +151,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   acquireItems(task: T): void {
-    const acquire = task.acquire instanceof Function ? task.acquire() : task.acquire;
+    const acquire = undelay(task.acquire);
     for (const to_get of acquire || []) {
       const num_needed = to_get.num ?? 1;
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
@@ -176,7 +177,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   acquireEffects(task: T): void {
-    const effects = typeof task.effects === "function" ? task.effects() : task.effects ?? [];
+    const effects = undelay(task.effects) ?? [];
     const songs = effects.filter((effect) => isSong(effect));
     if (songs.length > maxSongs()) throw "Too many AT songs";
     const extraSongs = Object.keys(myEffects())
@@ -199,7 +200,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   createOutfit(task: T): Outfit {
-    const spec = typeof task.outfit === "function" ? task.outfit() : task.outfit;
+    const spec = undelay(task.outfit);
     if (spec instanceof Outfit) return spec.clone();
 
     const outfit = new Outfit();
@@ -254,8 +255,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     for (const choice_id_str in task.choices) {
       const choice_id = parseInt(choice_id_str);
       const choice = task.choices[choice_id];
-      if (typeof choice === "number") choices[choice_id] = choice;
-      else choices[choice_id] = choice();
+      choices[choice_id] = undelay(choice);
     }
     manager.setChoices(choices);
   }
