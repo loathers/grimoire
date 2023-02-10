@@ -517,7 +517,7 @@ export class Outfit {
    * @returns True if this thing was successfully equipped.
    */
   tryEquip(thing: Equippable, slot?: Slot): boolean {
-    return this.tryEquip(thing, slot) && this.equip(thing, slot);
+    return this.canEquip(thing, slot) && this.equip(thing, slot);
   }
 
   /**
