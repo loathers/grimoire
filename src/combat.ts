@@ -377,7 +377,7 @@ class CompressedMacro {
  */
 export interface CombatResource {
   prepare?: () => void;
-  do: Item | Skill | Macro;
+  do: Item | Skill | DelayedMacro;
 }
 
 /**
@@ -418,6 +418,6 @@ export class CombatResources<A extends string> {
     if (resource === undefined) return undefined;
     if (resource.do instanceof Item) return new Macro().item(resource.do);
     if (resource.do instanceof Skill) return new Macro().skill(resource.do);
-    return resource.do;
+    return undelay(resource.do);
   }
 }
