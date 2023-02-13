@@ -2,6 +2,7 @@ import {
   bjornifyFamiliar,
   booleanModifier,
   canEquip,
+  cliExecute,
   enthroneFamiliar,
   equip,
   equippedItem,
@@ -28,9 +29,10 @@ import {
   get,
   have,
   Modes as LibramModes,
-  MaximizeOptions,
   Requirement,
 } from "libram";
+
+const FORCE_REFRESH_REQUIREMENT = new Requirement([], { forceUpdate: true });
 
 export const outfitSlots = [
   "hat",
@@ -60,11 +62,12 @@ export type Equippable = Item | Familiar | OutfitSpec | Item[] | Outfit;
 export interface OutfitSpec extends OutfitEquips {
   equip?: Item[]; // Items to be equipped in any slot
   modes?: Modes; // Modes to set on particular items
-  modifier?: string; // Modifier to maximize
+  modifier?: string | string[]; // Modifier to maximize
   familiar?: Familiar; // Familiar to use
   avoid?: Item[]; // Items that cause issues and so should not be equipped
   skipDefaults?: boolean; // Do not equip default equipment; fully maximize
   riders?: OutfitRiders; // Familiars to bjornify-enthrone
+  bonuses?: Map<Item, number>;
 }
 
 export type Modes = {
@@ -102,8 +105,9 @@ export class Outfit {
   modes: Modes = {};
   skipDefaults = false;
   familiar?: Familiar;
-  modifier = "";
+  modifier: string[] = [];
   avoid: Item[] = [];
+  bonuses = new Map<Item, number>();
 
   /**
    * Create an outfit from your current player state.
@@ -226,6 +230,43 @@ export class Outfit {
     }
   }
 
+  /**
+   * Returns the bonus value associated with a given item.
+   * @param item The item to check the bonus of.
+   * @returns The bonus assigned to that item.
+   */
+  public getBonus(item: Item): number {
+    return this.bonuses.get(item) ?? 0;
+  }
+
+  /**
+   * Sets the bonus value of an item equal to a given value, overriding any current bonus assigned.
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to apply a bonus to.
+   * @param value The value to try to apply.
+   * @returns Whether the bonus was successfully asigned.
+   */
+  public setBonus(item: Item, value: number): boolean {
+    const can = this.canEquip(item);
+    if (can) this.bonuses.set(item, value);
+    return can;
+  }
+
+  /**
+   * Adds a value to any existing bonus this item has; if it started without a bonus, sets the bonus equal to that value.
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to add a bonus to.
+   * @param value The value to try to add.
+   * @returns The total assigned bonus to that item.
+   */
+  public addBonus(item: Item, value: number): number {
+    const previous = this.getBonus(item);
+    this.setBonus(item, previous + value);
+    return this.getBonus(item);
+  }
+
   private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
     if (![undefined, $slot`familiar`].includes(slot)) return false;
     if (this.equips.has($slot`familiar`)) return false;
@@ -281,11 +322,17 @@ export class Outfit {
     this.avoid.push(...(spec?.avoid ?? []));
     this.skipDefaults = this.skipDefaults || (spec.skipDefaults ?? false);
     if (spec.modifier) {
-      this.modifier = this.modifier + (this.modifier ? ", " : "") + spec.modifier;
+      if (Array.isArray(spec.modifier)) this.modifier.push(...spec.modifier);
+      else this.modifier.push(spec.modifier);
     }
     if (spec.modes) {
       if (!this.setModes(spec.modes)) {
         succeeded = false;
+      }
+    }
+    if (spec.bonuses) {
+      for (const [item, value] of spec.bonuses) {
+        succeeded &&= value + this.getBonus(item) === this.addBonus(item, value);
       }
     }
     return succeeded;
@@ -522,15 +569,33 @@ export class Outfit {
 
   /**
    * Equip this outfit.
-   * @param extraOptions Passed to any maximizer calls made.
    */
-  dress(extraOptions?: Partial<MaximizeOptions>): void {
+  private _dress(refreshed: boolean): void {
     if (this.familiar) useFamiliar(this.familiar);
     const targetEquipment = Array.from(this.equips.values());
     const usedSlots = new Set<Slot>();
 
     // First, we equip non-accessory equipment.
     const nonaccessorySlots = $slots`weapon, off-hand, hat, back, shirt, pants, familiar`;
+
+    const bjorn = this.riders.get($slot`buddy-bjorn`);
+    if (
+      bjorn &&
+      (this.equips.get($slot`back`) === $item`Buddy Bjorn` || this.getBonus($item`Buddy Bjorn`))
+    ) {
+      usedSlots.add($slot`buddy-bjorn`);
+      usedSlots.add($slot`crown-of-thrones`);
+    }
+
+    const crown = this.riders.get($slot`crown-of-thrones`);
+    if (
+      crown &&
+      (this.equips.get($slot`hat`) === $item`Crown of Thrones` ||
+        this.getBonus($item`Crown of Thrones`))
+    ) {
+      usedSlots.add($slot`buddy-bjorn`);
+      usedSlots.add($slot`crown-of-thrones`);
+    }
 
     // We must manually remove equipment that we want to use in a different
     // slot than where it is currently equipped, to avoid a mafia issue.
@@ -586,40 +651,41 @@ export class Outfit {
       usedSlots.add(unusedSlot);
     }
 
-    // Handle the rider slots next
-    const bjorn = this.riders.get($slot`buddy-bjorn`);
-    if (bjorn) {
-      if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
-      if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
-      usedSlots.add($slot`buddy-bjorn`);
-    }
-    const crown = this.riders.get($slot`crown-of-thrones`);
-    if (crown) {
-      if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
-      if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
-      usedSlots.add($slot`crown-of-thrones`);
-    }
-
     // Remaining slots are filled by the maximizer
     const modes = convertToLibramModes(this.modes);
     if (this.modifier) {
       const allRequirements = [
-        new Requirement([this.modifier], {
+        new Requirement(this.modifier, {
           preventSlot: [...usedSlots],
           preventEquip: this.avoid,
           modes: modes,
+          bonusEquip: this.bonuses,
         }),
       ];
-      if (extraOptions) allRequirements.push(new Requirement([], extraOptions));
+
+      if (refreshed) allRequirements.push(FORCE_REFRESH_REQUIREMENT);
 
       if (!Requirement.merge(allRequirements).maximize()) {
-        throw `Unable to maximize ${this.modifier}`;
+        if (!refreshed) {
+          cliExecute("refresh inventory");
+          this._dress(true);
+          return;
+        } else throw new Error("Failed to maximize properly!");
       }
       logprint(`Maximize: ${this.modifier}`);
     }
 
     // Set the modes of any equipped items.
     applyModes(modes);
+    // Handle the rider slots next
+    if (bjorn) {
+      if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
+      if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
+    }
+    if (crown) {
+      if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
+      if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
+    }
 
     // Verify that all equipment was indeed equipped
     if (this.familiar !== undefined && myFamiliar() !== this.familiar)
@@ -647,6 +713,10 @@ export class Outfit {
     }
   }
 
+  public dress(): void {
+    this._dress(false);
+  }
+
   /**
    * Build an Outfit identical to this outfit.
    */
@@ -655,9 +725,10 @@ export class Outfit {
     result.equips = new Map(this.equips);
     result.skipDefaults = this.skipDefaults;
     result.familiar = this.familiar;
-    result.modifier = this.modifier;
+    result.modifier = [...this.modifier];
     result.avoid = [...this.avoid];
     result.modes = { ...this.modes };
+    result.bonuses = new Map(this.bonuses);
     return result;
   }
 
@@ -666,11 +737,12 @@ export class Outfit {
    */
   spec(): OutfitSpec {
     const result: OutfitSpec = {
-      modifier: this.modifier,
+      modifier: [...this.modifier],
       familiar: this.familiar,
       avoid: [...this.avoid],
       skipDefaults: this.skipDefaults,
       modes: { ...this.modes },
+      bonuses: new Map(this.bonuses),
     };
 
     // Add all equipment forced in a particular slot
