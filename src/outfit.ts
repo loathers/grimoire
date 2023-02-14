@@ -728,6 +728,7 @@ export class Outfit {
     result.modifier = [...this.modifier];
     result.avoid = [...this.avoid];
     result.modes = { ...this.modes };
+    result.riders = new Map(this.riders);
     result.bonuses = new Map(this.bonuses);
     return result;
   }
@@ -754,6 +755,15 @@ export class Outfit {
         ]).get(slotName) ?? toSlot(slotName)
       );
     }
+
+    // Include the riders
+    const riders: OutfitRiders = {};
+    const buddyRider = this.riders.get($slot`buddy-bjorn`);
+    if (buddyRider) riders["buddy-bjorn"] = buddyRider;
+    const throneRider = this.riders.get($slot`crown-of-thrones`);
+    if (throneRider) riders["crown-of-thrones"] = throneRider;
+    if (buddyRider || throneRider) result.riders = riders;
+
     return result;
   }
 }
