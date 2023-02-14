@@ -330,6 +330,12 @@ export class Outfit {
         succeeded = false;
       }
     }
+    if (spec.riders) {
+      if (spec.riders["buddy-bjorn"] && !this.bjornify(spec.riders["buddy-bjorn"]))
+        succeeded = false;
+      if (spec.riders["crown-of-thrones"] && !this.enthrone(spec.riders["crown-of-thrones"]))
+        succeeded = false;
+    }
     if (spec.bonuses) {
       for (const [item, value] of spec.bonuses) {
         succeeded &&= value + this.getBonus(item) === this.addBonus(item, value);
@@ -728,6 +734,7 @@ export class Outfit {
     result.modifier = [...this.modifier];
     result.avoid = [...this.avoid];
     result.modes = { ...this.modes };
+    result.riders = new Map(this.riders);
     result.bonuses = new Map(this.bonuses);
     return result;
   }
@@ -754,6 +761,15 @@ export class Outfit {
         ]).get(slotName) ?? toSlot(slotName)
       );
     }
+
+    // Include the riders
+    const riders: OutfitRiders = {};
+    const buddyRider = this.riders.get($slot`buddy-bjorn`);
+    if (buddyRider !== undefined) riders["buddy-bjorn"] = buddyRider;
+    const throneRider = this.riders.get($slot`crown-of-thrones`);
+    if (throneRider !== undefined) riders["crown-of-thrones"] = throneRider;
+    if (buddyRider !== undefined || throneRider !== undefined) result.riders = riders;
+
     return result;
   }
 }
