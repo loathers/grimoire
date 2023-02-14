@@ -330,6 +330,12 @@ export class Outfit {
         succeeded = false;
       }
     }
+    if (spec.riders) {
+      if (spec.riders["buddy-bjorn"] && !this.bjornify(spec.riders["buddy-bjorn"]))
+        succeeded = false;
+      if (spec.riders["crown-of-thrones"] && !this.enthrone(spec.riders["crown-of-thrones"]))
+        succeeded = false;
+    }
     if (spec.bonuses) {
       for (const [item, value] of spec.bonuses) {
         succeeded &&= value + this.getBonus(item) === this.addBonus(item, value);
