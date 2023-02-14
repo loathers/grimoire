@@ -2595,10 +2595,10 @@ kind-of@^6.0.0, kind-of@^6.0.2:
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
   integrity sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==
 
-kolmafia@^5.26781.0:
-  version "5.26990.0"
-  resolved "https://registry.yarnpkg.com/kolmafia/-/kolmafia-5.26990.0.tgz#a7529f00e9dfc8f51a65d19d49d57a44cd9e77f2"
-  integrity sha512-EKJ22DeeZmmqoXZqf4K0lZxRK1cAVkNL2Uws3hFabkN14WWC2PlitmyFIbYQc8BtEtgoiHjpe2WP8VezazV7QQ==
+kolmafia@^5.27075.0:
+  version "5.27193.0"
+  resolved "https://registry.yarnpkg.com/kolmafia/-/kolmafia-5.27193.0.tgz#71f0ed0a055b3f7bed76f5191492e812ebe72fb8"
+  integrity sha512-VE1v7CikMw2AtDuiMnuiLXdQZeQTjHRghXir7fbyTImVf+9uaBuljpt/pYVtDGE+zjQqjmKkzX+AoRRtkcatQg==
 
 levn@^0.4.1:
   version "0.4.1"
@@ -2608,14 +2608,13 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-libram@^0.7.10:
-  version "0.7.10"
-  resolved "https://registry.yarnpkg.com/libram/-/libram-0.7.10.tgz#42f86600af1f11723e6eeed5d83905bebf49311f"
-  integrity sha512-B4pv66ISaWX94MdT6d5JN57LA2Qx4tHjGqcw2fSfN2fs/krfVgOE8SDgTtGDUOxXGhDlBIyhnStu1EsPvl9bIw==
+libram@^0.7.11:
+  version "0.7.11"
+  resolved "https://registry.yarnpkg.com/libram/-/libram-0.7.11.tgz#c215ce008b1d7b79306937efbd3a87edf2c568f4"
+  integrity sha512-x3VGeNV7j4580U/qaGhFUZFF7rpXYgF7/cQz24+jQVm9+az9vKp9xQCu0zJGqzXqg9Qp/KMIJpwh3htd8++skQ==
   dependencies:
     "@babel/runtime-corejs3" "^7.17.2"
     core-js "^3.21.0"
-    lodash "^4.17.21"
 
 loader-runner@^4.2.0:
   version "4.2.0"
@@ -2657,11 +2656,6 @@ lodash.truncate@^4.4.2:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/lodash.truncate/-/lodash.truncate-4.4.2.tgz#5a350da0b1113b837ecfffd5812cbe58d6eae193"
   integrity sha1-WjUNoLERO4N+z//VgSy+WNbq4ZM=
-
-lodash@^4.17.21:
-  version "4.17.21"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
-  integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
 lru-cache@^6.0.0:
   version "6.0.0"
