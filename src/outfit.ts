@@ -759,10 +759,10 @@ export class Outfit {
     // Include the riders
     const riders: OutfitRiders = {};
     const buddyRider = this.riders.get($slot`buddy-bjorn`);
-    if (buddyRider) riders["buddy-bjorn"] = buddyRider;
+    if (buddyRider !== undefined) riders["buddy-bjorn"] = buddyRider;
     const throneRider = this.riders.get($slot`crown-of-thrones`);
-    if (throneRider) riders["crown-of-thrones"] = throneRider;
-    if (buddyRider || throneRider) result.riders = riders;
+    if (throneRider !== undefined) riders["crown-of-thrones"] = throneRider;
+    if (buddyRider !== undefined || throneRider !== undefined) result.riders = riders;
 
     return result;
   }
