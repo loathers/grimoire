@@ -35,21 +35,21 @@ Because of the way tasks need to be written, each task can take more lines to wr
 
 ## Scripts using Grimoire
 
-### Full-day loop wrappers
+#### Full-day loop wrappers
 - [goorbo](https://github.com/frazazel/goorbo): A wrapper for Grey You and garbo.
 - [loop](https://github.com/Kasekopf/loop)
 - [full-day](https://github.com/MrFizzyBubbs/full-day)
 
-### Ascension Automation
+#### Ascension automation
 - [phccs](https://github.com/horrible-little-slime/phccs), [loop-cs](https://github.com/MrFizzyBubbs/loop-cs): for Community Service runs.
 - [loop-gyou](https://github.com/Kasekopf/loop-casual/tree/gyou): for Grey You softcore runs.
 - [loop-casual](https://github.com/Kasekopf/loop-casual): for Casual runs.
 
-### Farming scripts 
+#### Farming scripts 
 - [baggo](https://github.com/MrFizzyBubbs/bag-collector): For the Neverending Party.
 - [garbo](https://github.com/Loathing-Associates-Scripting-Society/garbage-collector): For Barf Mountain.
 - [chrono](https://github.com/loathers/chrono-collector/tree/main/src): For the Time-Twitching Tower.
 - [railo](https://github.com/loathers/railo): For Crimbo 2022.
 
-### Other scripts
+#### Other scripts
 - [levelup](https://github.com/frazazel/levelup): A script that levels you up using your available resources.
