@@ -9,7 +9,8 @@ Grimoire is a framework for writing adventuring scripts. It uses a list of tasks
 - a unique name
 - a test to know if the task is complete
 - the actual adventuring task
-  Each task also optionally includes built-in support for outfits, combat macros, as well as effect maintenance and item acquisition, and safeguards to ensure that errors in tasks don't accidentally eat up all your adventures.
+
+Each task also optionally includes built-in support for outfits, combat macros, as well as effect maintenance and item acquisition, and safeguards to ensure that errors in tasks don't accidentally eat up all your adventures.
 
 Grimoire also features a robust argument-parsing and setting system that allows users to add runtime arguments or set kolmafia preferences to control things.
 
@@ -31,3 +32,24 @@ Because of the way tasks need to be written, each task can take more lines to wr
 ### Quirks:
 
 - Non-adventuring tasks that do not change your in-game state require special handling, either setting a custom user preference, or caching results using in-script variables.
+
+## Scripts using Grimoire
+
+### Full-day loop wrappers
+- [goorbo](https://github.com/frazazel/goorbo): A wrapper for Grey You and garbo.
+- [loop](https://github.com/Kasekopf/loop)
+- [full-day](https://github.com/MrFizzyBubbs/full-day)
+
+### Ascension Automation
+- [phccs](https://github.com/horrible-little-slime/phccs), [loop-cs](https://github.com/MrFizzyBubbs/loop-cs): for Community Service runs.
+- [loop-gyou](https://github.com/Kasekopf/loop-casual/tree/gyou): for Grey You softcore runs.
+- [loop-casual](https://github.com/Kasekopf/loop-casual): for Casual runs.
+
+### Farming scripts 
+- [baggo](https://github.com/MrFizzyBubbs/bag-collector): For the Neverending Party.
+- [garbo](https://github.com/Loathing-Associates-Scripting-Society/garbage-collector): For Barf Mountain.
+- [chrono](https://github.com/loathers/chrono-collector/tree/main/src): For the Time-Twitching Tower.
+- [railo](https://github.com/loathers/railo): For Crimbo 2022.
+
+### Other scripts
+- [levelup](https://github.com/frazazel/levelup): A script that levels you up using your available resources.
