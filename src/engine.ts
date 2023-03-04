@@ -327,8 +327,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    *
    * By default, this is only used to repeat a task if we hit one of:
    *   1. Halloweener dog noncombats,
-   *   2. June cleaver noncombats, or
-   *   3. Lil' Doctor™ bag noncombt.
+   *   2. June cleaver noncombats,
+   *   3. Lil' Doctor™ bag noncombat, or
+   *   4. Turtle taming noncombats.
    * @param task The current executing task.
    * @returns True if the task should be immediately repeated.
    */
@@ -434,9 +435,10 @@ export function maxSongs(): number {
 }
 
 export const wanderingNCs = new Set<string>([
+  // Halloweener dog noncombats
   "Wooof! Wooooooof!",
   "Playing Fetch*",
-  "A Pound of Cure",
+  // June cleaver noncombats
   "Aunts not Ants",
   "Bath Time",
   "Beware of Aligator",
@@ -446,13 +448,56 @@ export const wanderingNCs = new Set<string>([
   "Poetic Justice",
   "Summer Days",
   "Teacher's Pet",
+  // Lil' Doctor™ bag noncombat
+  "A Pound of Cure",
+  // Turtle taming noncombats
+  "Nantucket Snapper",
+  "Blue Monday",
+  "Capital!",
+  "Training Day",
+  "Boxed In",
+  "Duel Nature",
+  "Slow Food",
+  "A Rolling Turtle Gathers No Moss",
+  "The Horror...",
+  "Slow Road to Hell",
+  "C'mere, Little Fella",
+  "The Real Victims",
+  "Like That Time in Tortuga",
+  "Cleansing your Palette",
+  "Harem Scarum",
+  "Turtle in peril",
+  "No Man, No Hole",
+  "Slow and Steady Wins the Brawl",
+  "Stormy Weather",
+  "Turtles of the Universe",
+  "O Turtle Were Art Thou",
+  "Allow 6-8 Weeks For Delivery",
+  "Kick the Can",
+  "Turtles All The Way Around",
+  "More eXtreme Than Usual",
+  "Jewel in the Rough",
+  "The worst kind of drowning",
+  "Even Tamer Than Usual",
+  "Never Break the Chain",
+  "Close, but Yes Cigar",
+  "Armchair Quarterback",
+  "This Turtle Rocks!",
+  "Really Sticking Her Neck Out",
+  "It Came from Beneath the Sewer? Great!",
+  "Don't Be Alarmed, Now",
+  "Puttin' it on Wax",
+  "More Like... Hurtle",
+  "Musk! Musk! Musk!",
+  "Silent Strolling",
 ]);
 
 /**
  * Return true if the last adv was one of:
  *   1. Halloweener dog noncombats,
- *   2. June cleaver noncombats, or
- *   3. Lil' Doctor™ bag noncombt.
+ *   2. June cleaver noncombats,
+ *   3. Lil' Doctor™ bag noncombat, or
+ *   4. Turtle taming noncombats.
  */
 export function lastEncounterWasWanderingNC(): boolean {
   return wanderingNCs.has(get("lastEncounter"));
