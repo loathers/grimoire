@@ -1,5 +1,5 @@
 import { Task } from "./task";
-import { $skill, ensureEffect, get, have, isSong, PropertiesManager, set, uneffect } from "libram";
+import { $skill, ensureEffect, get, have, isSong, PropertiesManager, set, undelay, uneffect } from "libram";
 import {
   adv1,
   buy,
@@ -24,7 +24,6 @@ import {
 } from "kolmafia";
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
-import { undelay } from "./lib";
 
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;

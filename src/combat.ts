@@ -1,13 +1,12 @@
 import { Item, Location, Monster, Skill } from "kolmafia";
-import { Macro } from "libram";
-import { undelay } from "./lib";
+import { Delayed, Macro, undelay } from "libram";
 
 /**
  * A macro, or something that can become a macro.
  * The function will be called after the outfit has been equipped,
  * but before any task-specific preparation.
  */
-export type DelayedMacro = Macro | (() => Macro);
+export type DelayedMacro = Delayed<Macro>;
 
 /**
  * The strategy to use for combat for a task, which indicates what to do
