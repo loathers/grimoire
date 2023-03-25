@@ -33,7 +33,7 @@ export type Task<A extends string = never> = {
   //  2. adv1(do) OR do();
   //  3. post();
   prepare?: () => void;
-  do: Location | (() => void);
+  do: Location | (() => unknown);
   post?: () => void;
 
   acquire?: AcquireItem[] | (() => AcquireItem[]);

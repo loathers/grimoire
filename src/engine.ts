@@ -312,11 +312,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   do(task: T): void {
-    if (typeof task.do === "function") {
-      task.do();
-    } else {
-      adv1(task.do, 0, "");
-    }
+    const result = typeof task.do === "function" ? task.do() : task.do;
+    if (result instanceof Location) adv1(result, -1, "");
     runCombat();
     while (inMultiFight()) runCombat();
     if (choiceFollowsFight()) runChoice(-1);
