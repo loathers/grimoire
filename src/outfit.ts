@@ -754,12 +754,14 @@ export class Outfit {
 
     // Add all equipment forced in a particular slot
     for (const slotName of outfitSlots) {
-      result[slotName] = this.equips.get(
+      const entry = this.equips.get(
         new Map([
           ["famequip", $slot`familiar`],
           ["offhand", $slot`off-hand`],
         ]).get(slotName) ?? toSlot(slotName)
       );
+
+      if (entry) result[slotName] = entry;
     }
 
     // Include the riders
