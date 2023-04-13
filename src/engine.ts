@@ -15,6 +15,7 @@ import {
   buy,
   choiceFollowsFight,
   cliExecute,
+  Effect,
   equippedAmount,
   getRelated,
   inMultiFight,
@@ -186,7 +187,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   acquireEffects(task: T): void {
-    const effects = undelay(task.effects) ?? [];
+    const effects: Effect[] = undelay(task.effects) ?? [];
     const songs = effects.filter((effect) => isSong(effect));
     if (songs.length > maxSongs()) throw "Too many AT songs";
     const extraSongs = Object.keys(myEffects())
@@ -260,13 +261,10 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param manager The property manager to use.
    */
   setChoices(task: T, manager: PropertiesManager): void {
-    const choices: { [choice: number]: number } = {};
-    for (const choice_id_str in task.choices) {
-      const choice_id = parseInt(choice_id_str);
-      const choice = task.choices[choice_id];
-      choices[choice_id] = undelay(choice);
+    for (const [key, func] of Object.entries(task.choices ?? {})) {
+      if (func === undefined) continue;
+      manager.setChoice(parseInt(key), undelay(func));
     }
-    manager.setChoices(choices);
   }
 
   /**
