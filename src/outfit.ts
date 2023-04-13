@@ -745,21 +745,24 @@ export class Outfit {
   spec(): OutfitSpec {
     const result: OutfitSpec = {
       modifier: [...this.modifier],
-      familiar: this.familiar,
       avoid: [...this.avoid],
       skipDefaults: this.skipDefaults,
       modes: { ...this.modes },
       bonuses: new Map(this.bonuses),
     };
 
+    if (this.familiar) result.familiar = this.familiar;
+
     // Add all equipment forced in a particular slot
     for (const slotName of outfitSlots) {
-      result[slotName] = this.equips.get(
+      const entry = this.equips.get(
         new Map([
           ["famequip", $slot`familiar`],
           ["offhand", $slot`off-hand`],
         ]).get(slotName) ?? toSlot(slotName)
       );
+
+      if (entry) result[slotName] = entry;
     }
 
     // Include the riders
