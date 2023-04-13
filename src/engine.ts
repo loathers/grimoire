@@ -39,6 +39,7 @@ import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 export class EngineOptions<A extends string = never> {
   combat_defaults?: ActionDefaults<A>;
   ccs?: string; // If given, use a custom ccs instead of the Grimoire auto-generated ccs
+  allow_partial_outfits?: boolean; // If given, do not crash when a specified outfit cannot be fully equipped
 }
 
 const grimoireCCS = "grimoire_macro";
@@ -215,7 +216,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
 
     const outfit = new Outfit();
     if (spec !== undefined) {
-      if (!outfit.equip(spec)) {
+      if (!outfit.equip(spec) && !this.options.allow_partial_outfits) {
         throw `Unable to equip all items for ${task.name}`;
       }
     }
