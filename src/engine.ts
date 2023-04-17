@@ -464,7 +464,6 @@ export const wanderingNCs = new Set<string>([
   "Duel Nature",
   "Slow Food",
   "A Rolling Turtle Gathers No Moss",
-  "The Horror...",
   "Slow Road to Hell",
   "C'mere, Little Fella",
   "The Real Victims",
@@ -497,6 +496,10 @@ export const wanderingNCs = new Set<string>([
   "Silent Strolling",
 ]);
 
+export const zoneSpecificNCs = new Map<string, string[]>([
+  ["The Horror...", ["Frat House"]], // Duplicate choice name
+]);
+
 /**
  * Return true if the last adv was one of:
  *   1. Halloweener dog noncombats,
@@ -505,5 +508,12 @@ export const wanderingNCs = new Set<string>([
  *   4. Turtle taming noncombats.
  */
 export function lastEncounterWasWanderingNC(): boolean {
-  return wanderingNCs.has(get("lastEncounter"));
+  const last = get("lastEncounter");
+  if (zoneSpecificNCs.has(last)) {
+    // Handle NCs with a duplicated name
+    const zones = zoneSpecificNCs.get(last) ?? [];
+    return zones.includes(get("lastAdventure"));
+  } else {
+    return wanderingNCs.has(last);
+  }
 }
