@@ -338,7 +338,8 @@ export class Outfit {
     }
     if (spec.bonuses) {
       for (const [item, value] of spec.bonuses) {
-        succeeded &&= value + this.getBonus(item) === this.addBonus(item, value);
+        this.addBonus(item, value);
+        succeeded &&= this.bonuses.has(item);
       }
     }
     return succeeded;
