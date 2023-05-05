@@ -5,6 +5,7 @@ import {
   get,
   have,
   isSong,
+  KnownProperty,
   PropertiesManager,
   set,
   undelay,
@@ -382,49 +383,56 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     }
   }
 
+  static defaultSettings = {
+    logPreferenceChange: true,
+    logPreferenceChangeFilter: [
+      ...new Set([
+        ...get("logPreferenceChangeFilter").split(","),
+        "libram_savedMacro",
+        "maximizerMRUList",
+        "testudinalTeachings",
+        "_lastCombatStarted",
+      ]),
+    ]
+      .sort()
+      .filter((a) => a)
+      .join(","),
+    battleAction: "custom combat script",
+    autoSatisfyWithMall: true,
+    autoSatisfyWithNPCs: true,
+    autoSatisfyWithCoinmasters: true,
+    autoSatisfyWithStash: false,
+    dontStopForCounters: true,
+    maximizerFoldables: true,
+    hpAutoRecovery: "-0.05",
+    hpAutoRecoveryTarget: "0.0",
+    mpAutoRecovery: "-0.05",
+    mpAutoRecoveryTarget: "0.0",
+    afterAdventureScript: "",
+    betweenBattleScript: "",
+    choiceAdventureScript: "",
+    familiarScript: "",
+    currentMood: "apathetic",
+    autoTuxedo: true,
+    autoPinkyRing: true,
+    autoGarish: true,
+    allowNonMoodBurning: false,
+    allowSummonBurning: true,
+    libramSkillsSoftcore: "none",
+  };
+
+  private getDefaultSettings(): { [x in KnownProperty]: unknown } {
+    return (this.constructor as unknown as { defaultSettings: { [x in KnownProperty]: unknown } })
+      .defaultSettings;
+  }
+
   /**
    * Initialize properties for the script.
    * @param manager The properties manager to use.
    */
   initPropertiesManager(manager: PropertiesManager): void {
     // Properties adapted from garbo
-    manager.set({
-      logPreferenceChange: true,
-      logPreferenceChangeFilter: [
-        ...new Set([
-          ...get("logPreferenceChangeFilter").split(","),
-          "libram_savedMacro",
-          "maximizerMRUList",
-          "testudinalTeachings",
-          "_lastCombatStarted",
-        ]),
-      ]
-        .sort()
-        .filter((a) => a)
-        .join(","),
-      battleAction: "custom combat script",
-      autoSatisfyWithMall: true,
-      autoSatisfyWithNPCs: true,
-      autoSatisfyWithCoinmasters: true,
-      autoSatisfyWithStash: false,
-      dontStopForCounters: true,
-      maximizerFoldables: true,
-      hpAutoRecovery: "-0.05",
-      hpAutoRecoveryTarget: "0.0",
-      mpAutoRecovery: "-0.05",
-      mpAutoRecoveryTarget: "0.0",
-      afterAdventureScript: "",
-      betweenBattleScript: "",
-      choiceAdventureScript: "",
-      familiarScript: "",
-      currentMood: "apathetic",
-      autoTuxedo: true,
-      autoPinkyRing: true,
-      autoGarish: true,
-      allowNonMoodBurning: false,
-      allowSummonBurning: true,
-      libramSkillsSoftcore: "none",
-    });
+    manager.set(this.getDefaultSettings());
     if (this.options.ccs !== "") {
       if (this.options.ccs === undefined && readCcs(grimoireCCS) === "") {
         // Write a simple CCS so we can switch to it
