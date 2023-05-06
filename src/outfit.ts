@@ -248,9 +248,8 @@ export class Outfit {
    * @returns Whether the bonus was successfully asigned.
    */
   public setBonus(item: Item, value: number): boolean {
-    const can = this.canEquip(item);
-    if (can) this.bonuses.set(item, value);
-    return can;
+    this.bonuses.set(item, value);
+    return this.bonuses.get(item) === value;
   }
 
   /**
