@@ -610,7 +610,11 @@ export class Outfit {
       if (
         (targetEquipment.includes(equippedItem(slot)) &&
           this.equips.get(slot) !== equippedItem(slot)) ||
-        this.avoid.includes(equippedItem(slot))
+        this.avoid.includes(equippedItem(slot)) ||
+        (slot === $slot`weapon` &&
+          weaponHands(equippedItem(slot)) !== 1 &&
+          this.equips.has($slot`offhand`) &&
+          !this.equips.has($slot`weapon`))
       )
         equip(slot, $item.none);
     }
