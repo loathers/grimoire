@@ -108,6 +108,7 @@ export class Outfit {
   modifier: string[] = [];
   avoid: Item[] = [];
   bonuses = new Map<Item, number>();
+  private actions: (() => void)[] = [];
 
   /**
    * Create an outfit from your current player state.
@@ -573,6 +574,10 @@ export class Outfit {
     return this.canEquip(thing, slot) && this.equip(thing, slot);
   }
 
+  onDress(...actions: (() => void)[]): void {
+    this.actions.push(...actions);
+  }
+
   /**
    * Equip this outfit.
    */
@@ -725,6 +730,7 @@ export class Outfit {
 
   public dress(): void {
     this._dress(false);
+    for (const action of this.actions) action();
   }
 
   /**
