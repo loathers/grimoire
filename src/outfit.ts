@@ -354,7 +354,7 @@ export class Outfit {
   public equipFirst(things: Item[] | Familiar[], slot?: Slot): boolean {
     // some() returns false on an empty array, yet every() returns true.
     // This keeps behavior consistent between slotful and slotless equipping.
-    if (things.length < 1) return true;
+    if (things.length === 0) return true;
     return things.some((val) => this.equip(val, slot));
   }
 
