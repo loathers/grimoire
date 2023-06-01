@@ -712,12 +712,12 @@ export class Outfit {
         throw `Failed to fully dress (expected: acc ${accessory})`;
       }
     }
-    for (const [rider, checkingFunction] of [
-      [$slot`buddy-bjorn`, myBjornedFamiliar],
-      [$slot`crown-of-thrones`, myEnthronedFamiliar],
+    for (const [rider, throne, checkingFunction] of [
+      [$slot`buddy-bjorn`, $item`Buddy Bjorn`, myBjornedFamiliar],
+      [$slot`crown-of-thrones`, $item`Crown of Thrones`, myEnthronedFamiliar],
     ] as const) {
       const wanted = this.riders.get(rider);
-      if (wanted && checkingFunction() !== wanted) {
+      if ([...this.equips.values()].includes(throne) && wanted && checkingFunction() !== wanted) {
         throw `Failed to fully dress: (expected ${rider} ${wanted})`;
       }
     }
