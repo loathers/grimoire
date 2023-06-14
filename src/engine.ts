@@ -45,6 +45,8 @@ export class EngineOptions<A extends string = never> {
 
 const grimoireCCS = "grimoire_macro";
 
+type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? never : T[x] }
+
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
   options: EngineOptions<A>;
@@ -52,6 +54,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
   cachedCcsContents = "";
+  default_task_options: Partial<Optional<T>> = {};
 
   /**
    * Create the engine.
@@ -120,9 +123,11 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * This is the main entry point for the Engine.
    * @param task The current executing task.
    */
-  public execute(task: T): void {
+  public execute(rawTask: T): void {
     print(``);
-    print(`Executing ${task.name}`, "blue");
+    print(`Executing ${rawTask.name}`, "blue");
+
+    const task = {...this.default_task_options, ...rawTask};
 
     // Determine the proper postcondition for after the task executes.
     const postcondition = task.limit?.guard?.();
