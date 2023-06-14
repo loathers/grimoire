@@ -45,7 +45,7 @@ export class EngineOptions<A extends string = never> {
 
 const grimoireCCS = "grimoire_macro";
 
-type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? never : T[x] }
+type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? NonNullable<T[x]> : never };
 
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
@@ -127,7 +127,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     print(``);
     print(`Executing ${rawTask.name}`, "blue");
 
-    const task = {...this.default_task_options, ...rawTask};
+    const task = { ...this.default_task_options, ...rawTask };
 
     // Determine the proper postcondition for after the task executes.
     const postcondition = task.limit?.guard?.();
