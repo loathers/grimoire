@@ -38,7 +38,7 @@ export type Task<A extends string = never> = {
 
   acquire?: AcquireItem[] | (() => AcquireItem[]);
   effects?: Effect[] | (() => Effect[]);
-  choices?: { [id: number]: number | (() => number) };
+  choices?: { [id: number]: (string | number) | (() => string | number) };
   limit?: Limit;
   outfit?: OutfitSpec | Outfit | (() => OutfitSpec | Outfit);
   combat?: CombatStrategy<A>;
