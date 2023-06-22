@@ -352,6 +352,9 @@ export class Outfit {
    * @returns True if one of the things is equipped, and false otherwise.
    */
   public equipFirst(things: Item[] | Familiar[], slot?: Slot): boolean {
+    // some() returns false on an empty array, yet every() returns true.
+    // This keeps behavior consistent between slotful and slotless equipping.
+    if (things.length === 0) return true;
     return things.some((val) => this.equip(val, slot));
   }
 
