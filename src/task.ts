@@ -1,5 +1,5 @@
 import { Effect, Item, Location } from "kolmafia";
-import { get } from "libram";
+import { Delayed, get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
@@ -36,13 +36,23 @@ export type Task<A extends string = never> = {
   do: Location | (() => Location) | (() => void);
   post?: () => void;
 
-  acquire?: AcquireItem[] | (() => AcquireItem[]);
-  effects?: Effect[] | (() => Effect[]);
-  choices?: { [id: number]: (number | string) | (() => number | string) };
+  acquire?: Delayed<AcquireItem[]>;
+  effects?: Delayed<Effect[]>;
+  choices?: { [id: number]: Delayed<number | string> };
   limit?: Limit;
-  outfit?: OutfitSpec | Outfit | (() => OutfitSpec | Outfit);
+  outfit?: Delayed<OutfitSpec | Outfit>;
   combat?: CombatStrategy<A>;
 };
+
+export type StrictCombatTask<A extends string = never> = Omit<Task, "do"> &
+  (
+    | {
+        do: Delayed<Location> | (() => void);
+        combat: CombatStrategy<A>;
+        outfit: Delayed<OutfitSpec | Outfit>;
+      }
+    | { do: () => void }
+  );
 
 /**
  * Returns the state of a quest as a numeric value as follows:
