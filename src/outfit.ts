@@ -352,6 +352,9 @@ export class Outfit {
    * @returns True if one of the things is equipped, and false otherwise.
    */
   public equipFirst(things: Item[] | Familiar[], slot?: Slot): boolean {
+    // some() returns false on an empty array, yet every() returns true.
+    // This keeps behavior consistent between slotful and slotless equipping.
+    if (things.length === 0) return true;
     return things.some((val) => this.equip(val, slot));
   }
 
@@ -712,12 +715,12 @@ export class Outfit {
         throw `Failed to fully dress (expected: acc ${accessory})`;
       }
     }
-    for (const [rider, checkingFunction] of [
-      [$slot`buddy-bjorn`, myBjornedFamiliar],
-      [$slot`crown-of-thrones`, myEnthronedFamiliar],
+    for (const [rider, throne, checkingFunction] of [
+      [$slot`buddy-bjorn`, $item`Buddy Bjorn`, myBjornedFamiliar],
+      [$slot`crown-of-thrones`, $item`Crown of Thrones`, myEnthronedFamiliar],
     ] as const) {
       const wanted = this.riders.get(rider);
-      if (wanted && checkingFunction() !== wanted) {
+      if ([...this.equips.values()].includes(throne) && wanted && checkingFunction() !== wanted) {
         throw `Failed to fully dress: (expected ${rider} ${wanted})`;
       }
     }
