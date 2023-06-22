@@ -37,31 +37,30 @@ import {
 import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
-export class EngineOptions<A extends string = never> {
+type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? NonNullable<T[x]> : never };
+export class EngineOptions<A extends string = never, T extends Task<A> = Task<A>> {
   combat_defaults?: ActionDefaults<A>;
   ccs?: string; // If given, use a custom ccs instead of the Grimoire auto-generated ccs
   allow_partial_outfits?: boolean; // If given, do not crash when a specified outfit cannot be fully equipped
+  default_task_options?: Partial<Optional<T>>;
 }
 
 const grimoireCCS = "grimoire_macro";
 
-type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? NonNullable<T[x]> : never };
-
 export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   tasks: T[];
-  options: EngineOptions<A>;
+  options: EngineOptions<A, T>;
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
   cachedCcsContents = "";
-  default_task_options: Partial<Optional<T>> = {};
 
   /**
    * Create the engine.
    * @param tasks A list of tasks for looking up task dependencies.
    * @param options Basic configuration of the engine.
    */
-  constructor(tasks: T[], options?: EngineOptions<A>) {
+  constructor(tasks: T[], options?: EngineOptions<A, T>) {
     this.tasks = tasks;
     this.options = options ?? {};
     for (const task of tasks) {
@@ -127,7 +126,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     print(``);
     print(`Executing ${rawTask.name}`, "blue");
 
-    const task = { ...this.default_task_options, ...rawTask };
+    const task = { ...this.options.default_task_options, ...rawTask };
 
     // Determine the proper postcondition for after the task executes.
     const postcondition = task.limit?.guard?.();
