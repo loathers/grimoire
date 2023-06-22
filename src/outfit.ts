@@ -68,6 +68,8 @@ export interface OutfitSpec extends OutfitEquips {
   skipDefaults?: boolean; // Do not equip default equipment; fully maximize
   riders?: OutfitRiders; // Familiars to bjornify-enthrone
   bonuses?: Map<Item, number>;
+  beforeDress?: (() => void)[];
+  afterDress?: (() => void)[];
 }
 
 export type Modes = {
@@ -343,6 +345,9 @@ export class Outfit {
         succeeded &&= this.bonuses.has(item);
       }
     }
+    this.beforeDress(...(spec.beforeDress ?? []));
+    this.afterDress(...(spec.afterDress ?? []));
+
     return succeeded;
   }
 
@@ -752,6 +757,8 @@ export class Outfit {
     result.modes = { ...this.modes };
     result.riders = new Map(this.riders);
     result.bonuses = new Map(this.bonuses);
+    result.beforeDress(...this.preActions);
+    result.afterDress(...this.postActions);
     return result;
   }
 
@@ -788,6 +795,9 @@ export class Outfit {
     const throneRider = this.riders.get($slot`crown-of-thrones`);
     if (throneRider !== undefined) riders["crown-of-thrones"] = throneRider;
     if (buddyRider !== undefined || throneRider !== undefined) result.riders = riders;
+
+    if (this.preActions.length) result.beforeDress = this.preActions;
+    if (this.postActions.length) result.afterDress = this.postActions;
 
     return result;
   }
