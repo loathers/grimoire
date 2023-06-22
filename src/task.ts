@@ -44,7 +44,7 @@ export type Task<A extends string = never> = {
   combat?: CombatStrategy<A>;
 };
 
-export type StrictCombatTask<A extends string = never> = Omit<Task, "do"> &
+export type StrictCombatTask<A extends string = never> = Omit<Task, "do" | "combat"> &
   (
     | {
         do: Delayed<Location> | (() => void);
