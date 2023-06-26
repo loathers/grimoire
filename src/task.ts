@@ -51,7 +51,7 @@ export type StrictCombatTask<A extends string = never> = Omit<Task, "do" | "comb
         combat: CombatStrategy<A>;
         outfit: Delayed<OutfitSpec | Outfit>;
       }
-    | { do: () => void }
+    | { do: () => void; combat: never }
   );
 
 /**
