@@ -394,11 +394,26 @@ export class Outfit {
    * @param error An error to throw if we fail to equip the outfit; if this parameter is null, the return type will be Outfit | null
    * @returns A new outfit containing the inputted spec, or null if that is impossible.
    */
-  static from(spec: OutfitSpec): Outfit | null;
-  static from(spec: OutfitSpec, error: null): Outfit | null;
-  static from(spec: OutfitSpec, error: Error): Outfit;
-  static from(spec: OutfitSpec, error: Error | null = null): Outfit | null {
+  static from(spec: OutfitSpec | Requirement): Outfit | null;
+  static from(spec: OutfitSpec | Requirement, error: null): Outfit | null;
+  static from(spec: OutfitSpec | Requirement, error: Error): Outfit;
+  static from(spec: OutfitSpec | Requirement, error: Error | null = null): Outfit | null {
     const outfit = new Outfit();
+
+    if (spec instanceof Requirement) {
+      const result: OutfitSpec = {};
+      result.modifier = spec.maximizeParameters;
+      if (spec.maximizeOptions.forceEquip?.length) {
+        result.equip = spec.maximizeOptions.forceEquip;
+      }
+      result.avoid = spec.maximizeOptions.preventEquip;
+      result.bonuses = spec.maximizeOptions.bonusEquip;
+      // Not sure if this is necessary
+      const cleanedResult = Object.fromEntries(
+        [...Object.entries(result)].filter(([, v]) => v !== undefined)
+      );
+      return Outfit.from(cleanedResult);
+    }
 
     const success = outfit.equip(spec);
     if (!success && error) throw error;
