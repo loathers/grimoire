@@ -16,6 +16,7 @@ export type Limit = {
   turns?: number;
   soft?: number;
   unready?: boolean;
+  completed?: boolean;
   guard?: Guard;
   message?: string;
 };
