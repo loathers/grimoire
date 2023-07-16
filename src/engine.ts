@@ -381,6 +381,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
         throw `Task ${task.name} did not complete within ${task.limit.turns} turns. Please check what went wrong.${failureMessage}`;
       if (task.limit.unready && task.ready?.())
         throw `Task ${task.name} is still ready, but it should not be. Please check what went wrong.${failureMessage}`;
+      if (task.limit.completed)
+        throw `Task ${task.name} is not completed, but it should be. Please check what went wrong.${failureMessage}`;
     }
     if (postcondition && !postcondition()) {
       throw `Task ${task.name} failed its guard. Please check what went wrong.${failureMessage}`;

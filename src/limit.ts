@@ -6,6 +6,7 @@ import { get } from "libram";
  * @member turns Number of turns_spent in the task location, after which we abort.
  * @member soft Number of attempts per script run, after which we abort with "unlucky".
  * @member unready If true, .ready() on the task should return false after an execution.
+ * @member completed If true, .completed() on the task should return true after an execution.
  * @member guard A pre/postcondition for the task; see {@link Guards}.
  *    The outer function is run before the task executes, and then the
  *    returned inner function is run after the task executes.
@@ -16,6 +17,7 @@ export type Limit = {
   turns?: number;
   soft?: number;
   unready?: boolean;
+  completed?: boolean;
   guard?: Guard;
   message?: string;
 };
