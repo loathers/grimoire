@@ -408,6 +408,9 @@ export class Outfit {
       }
       result.avoid = spec.maximizeOptions.preventEquip;
       result.bonuses = spec.maximizeOptions.bonusEquip;
+      if (spec.maximizeOptions.modes) {
+        result.modes = convertFromLibramModes(spec.maximizeOptions.modes);
+      }
       // Not sure if this is necessary
       const cleanedResult = Object.fromEntries(
         [...Object.entries(result)].filter(([, v]) => v !== undefined)
@@ -816,6 +819,10 @@ export function convertToLibramModes(modes: Modes): LibramModes {
     retrocape: modes["retrocape"]?.filter((s) => s !== undefined).join(" "),
     parka: modes["parka"],
   };
+}
+
+export function convertFromLibramModes(modes: LibramModes): Modes {
+  return (modes.retrocape ? { ...modes, retrocape: modes.retrocape.split(" ") } : modes) as Modes;
 }
 
 /**
