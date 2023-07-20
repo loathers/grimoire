@@ -706,11 +706,11 @@ export class Outfit {
     // Set the modes of any equipped items.
     applyModes(modes);
     // Handle the rider slots next
-    if (bjorn) {
+    if (bjorn && haveEquipped($item`Buddy Bjorn`)) {
       if (myEnthronedFamiliar() === bjorn) enthroneFamiliar($familiar.none);
       if (myBjornedFamiliar() !== bjorn) bjornifyFamiliar(bjorn);
     }
-    if (crown) {
+    if (crown && haveEquipped($item`Crown of Thrones`)) {
       if (myBjornedFamiliar() === crown) bjornifyFamiliar($familiar.none);
       if (myEnthronedFamiliar() !== crown) enthroneFamiliar(crown);
     }
