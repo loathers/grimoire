@@ -55,7 +55,7 @@ export type StrictCombatTask<
         combat: C;
         outfit: Delayed<O>;
       }
-    | { do: () => void; combat: never; outfit?: Delayed<O> }
+    | { do: () => void; outfit?: Delayed<O> }
   );
 
 /**
