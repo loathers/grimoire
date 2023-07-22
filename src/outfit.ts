@@ -265,11 +265,7 @@ export class Outfit {
    * @param reducer Function that combines new and current bonus
    * @returns The total assigned bonus to that item.
    */
-  public addBonus(
-    item: Item,
-    value: number,
-    reducer = (a: number, b: number) => a + (b ?? 0)
-  ): number {
+  public addBonus(item: Item, value: number, reducer = (a: number, b: number) => a + b): number {
     const previous = this.getBonus(item);
     this.setBonus(item, reducer(value, previous));
     return this.getBonus(item);
