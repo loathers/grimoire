@@ -257,17 +257,32 @@ export class Outfit {
   }
 
   /**
-   * Adds a value to any existing bonus this item has; if it started without a bonus, sets the bonus equal to that value.
+   * Adds a value to any existing bonus this item has, using a rule assigned by the `reducer` parameter
    *
    * Only triggers on items that may be equipped to this outfit.
    * @param item The item to try to add a bonus to.
    * @param value The value to try to add.
+   * @param reducer Function that combines new and current bonus
    * @returns The total assigned bonus to that item.
    */
-  public addBonus(item: Item, value: number): number {
+  public addBonus(
+    item: Item,
+    value: number,
+    reducer = (a: number, b: number) => a + (b ?? 0)
+  ): number {
     const previous = this.getBonus(item);
-    this.setBonus(item, previous + value);
+    this.setBonus(item, reducer(value, previous));
     return this.getBonus(item);
+  }
+
+  /**
+   * Adds a set of values to any existing bonus this item has, using a rule assigned by the `reducer` parameter
+   *
+   * @param items Map containing items and bonuses
+   * @param reducer Function that combines new and current bonus
+   */
+  public addBonuses(items: Map<Item, number>, reducer = (a: number, b: number) => a + b): void {
+    for (const [item, value] of items) this.addBonus(item, value, reducer);
   }
 
   private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
