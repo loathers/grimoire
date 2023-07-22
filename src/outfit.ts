@@ -244,41 +244,70 @@ export class Outfit {
   }
 
   /**
-   * Sets the bonus value of an item equal to a given value, overriding any current bonus assigned.
+   * Applies a value to any existing bonus this item has, using a rule assigned by the `reducer` parameter
    *
    * Only triggers on items that may be equipped to this outfit.
    * @param item The item to try to apply a bonus to.
    * @param value The value to try to apply.
-   * @returns Whether the bonus was successfully asigned.
-   */
-  public setBonus(item: Item, value: number): boolean {
-    this.bonuses.set(item, value);
-    return this.bonuses.get(item) === value;
-  }
-
-  /**
-   * Adds a value to any existing bonus this item has, using a rule assigned by the `reducer` parameter
-   *
-   * Only triggers on items that may be equipped to this outfit.
-   * @param item The item to try to add a bonus to.
-   * @param value The value to try to add.
    * @param reducer Function that combines new and current bonus
    * @returns The total assigned bonus to that item.
    */
-  public addBonus(item: Item, value: number, reducer = (a: number, b: number) => a + b): number {
+  public applyBonus(item: Item, value: number, reducer: (a: number, b: number) => number): number {
     const previous = this.getBonus(item);
     this.setBonus(item, reducer(value, previous));
     return this.getBonus(item);
   }
 
   /**
-   * Adds a set of values to any existing bonus this item has, using a rule assigned by the `reducer` parameter
+   * Sets the bonus value of an item equal to a given value, overriding any current bonus assigned.
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to apply a bonus to.
+   * @param value The value to try to apply.
+   */
+  public setBonus(item: Item, value: number): number {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return this.applyBonus(item, value, (a, _b) => a);
+  }
+
+  /**
+   * Adds a value to any existing bonus this item has
+   *
+   * Only triggers on items that may be equipped to this outfit.
+   * @param item The item to try to add a bonus to.
+   * @param value The value to try to add.
+   * @returns The total assigned bonus to that item.
+   */
+  public addBonus(item: Item, value: number): number {
+    return this.applyBonus(item, value, (a, b) => a + b);
+  }
+
+  /**
+   * Apply the given items' bonuses to the outfit, using a rule given by the reducer
+   *
+   * @param items A map containing items and their bonuses
+   * @param reducer A way of combining new bonuses with existing bonuses
+   */
+  public applyBonuses(items: Map<Item, number>, reducer: (a: number, b: number) => number): void {
+    for (const [item, value] of items) this.applyBonus(item, value, reducer);
+  }
+
+  /**
+   * Sets the bonuses of the given items, overriding existing bonuses
    *
    * @param items Map containing items and bonuses
-   * @param reducer Function that combines new and current bonus
    */
-  public addBonuses(items: Map<Item, number>, reducer = (a: number, b: number) => a + b): void {
-    for (const [item, value] of items) this.addBonus(item, value, reducer);
+  public setBonuses(items: Map<Item, number>): void {
+    this.applyBonuses(items, (a) => a);
+  }
+
+  /**
+   * Adds the bonuses of the given items to any existing bonuses they ahave
+   *
+   * @param items Map containing items and bonuses
+   */
+  public addBonuses(items: Map<Item, number>): void {
+    this.applyBonuses(items, (a, b) => a + b);
   }
 
   private equipUsingFamiliar(item: Item, slot?: Slot): boolean {
