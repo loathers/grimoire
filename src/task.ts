@@ -20,6 +20,8 @@ export type AcquireItem = {
   get?: () => void;
 };
 
+export const TaskRequiredProperties = ["completed", "do", "name"] as const;
+
 export type Task<A extends string = never> = {
   name: string;
   after?: string[];
