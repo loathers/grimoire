@@ -267,9 +267,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param manager The property manager to use.
    */
   setChoices(task: T, manager: PropertiesManager): void {
-    for (const [key, func] of Object.entries(task.choices ?? {})) {
-      if (func === undefined) continue;
-      manager.setChoice(parseInt(key), undelay(func));
+    for (const [key, value] of Object.entries(undelay(task.choices ?? {}))) {
+      if (value === undefined) continue;
+      manager.setChoice(parseInt(key), value);
     }
   }
 
