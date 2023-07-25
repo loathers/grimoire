@@ -513,7 +513,7 @@ export class Outfit {
    * @returns True if we successfully set the bjorn to a valid target.
    */
   bjornify(target: Familiar | Familiar[]): boolean {
-    return this.equipRider(target, $slot`buddy-bjorn`) === true;
+    return this.equipRider(target, $slot`buddy-bjorn`);
   }
 
   /**
@@ -526,7 +526,7 @@ export class Outfit {
    * @returns True if we successfully set the enthrone to a valid target.
    */
   enthrone(target: Familiar | Familiar[]): boolean {
-    return this.equipRider(target, $slot`crown-of-thrones`) === true;
+    return this.equipRider(target, $slot`crown-of-thrones`);
   }
 
   /**
