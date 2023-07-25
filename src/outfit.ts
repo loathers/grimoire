@@ -236,6 +236,7 @@ export class Outfit {
 
   /**
    * Returns the bonus value associated with a given item.
+   *
    * @param item The item to check the bonus of.
    * @returns The bonus assigned to that item.
    */
@@ -246,7 +247,6 @@ export class Outfit {
   /**
    * Applies a value to any existing bonus this item has, using a rule assigned by the `reducer` parameter
    *
-   * Only triggers on items that may be equipped to this outfit.
    * @param item The item to try to apply a bonus to.
    * @param value The value to try to apply.
    * @param reducer Function that combines new and current bonus
@@ -254,26 +254,24 @@ export class Outfit {
    */
   public applyBonus(item: Item, value: number, reducer: (a: number, b: number) => number): number {
     const previous = this.getBonus(item);
-    this.setBonus(item, reducer(value, previous));
-    return this.getBonus(item);
+    return this.setBonus(item, reducer(value, previous));
   }
 
   /**
    * Sets the bonus value of an item equal to a given value, overriding any current bonus assigned.
    *
-   * Only triggers on items that may be equipped to this outfit.
    * @param item The item to try to apply a bonus to.
    * @param value The value to try to apply.
+   * @returns The total assigned bonus to that item.
    */
   public setBonus(item: Item, value: number): number {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return this.applyBonus(item, value, (a, _b) => a);
+    this.bonuses.set(item, value);
+    return value;
   }
 
   /**
    * Adds a value to any existing bonus this item has
    *
-   * Only triggers on items that may be equipped to this outfit.
    * @param item The item to try to add a bonus to.
    * @param value The value to try to add.
    * @returns The total assigned bonus to that item.
@@ -380,10 +378,7 @@ export class Outfit {
         succeeded = false;
     }
     if (spec.bonuses) {
-      for (const [item, value] of spec.bonuses) {
-        this.addBonus(item, value);
-        succeeded &&= this.bonuses.has(item);
-      }
+      this.addBonuses(spec.bonuses);
     }
     this.beforeDress(...(spec.beforeDress ?? []));
     this.afterDress(...(spec.afterDress ?? []));
