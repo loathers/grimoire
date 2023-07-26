@@ -107,6 +107,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    *  (regardless of if C is complete or not).
    */
   public available(task: T): boolean {
+    if (task.limit?.skip !== undefined && this.attempts[task.name] >= task.limit.skip) return false;
     for (const after of task.after ?? []) {
       const after_task = this.tasks_by_name.get(after);
       if (after_task === undefined) throw `Unknown task dependency ${after} on ${task.name}`;

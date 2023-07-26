@@ -5,6 +5,7 @@ import { get } from "libram";
  * @member tries Number of attempts per script run, after which we abort.
  * @member turns Number of turns_spent in the task location, after which we abort.
  * @member soft Number of attempts per script run, after which we abort with "unlucky".
+ * @member skip Number of attempts per script run, after which we simply stop marking the task as `available`
  * @member unready If true, .ready() on the task should return false after an execution.
  * @member completed If true, .completed() on the task should return true after an execution.
  * @member guard A pre/postcondition for the task; see {@link Guards}.
@@ -16,6 +17,7 @@ export type Limit = {
   tries?: number;
   turns?: number;
   soft?: number;
+  skip?: number;
   unready?: boolean;
   completed?: boolean;
   guard?: Guard;
