@@ -61,10 +61,10 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param options Basic configuration of the engine.
    */
   constructor(tasks: T[], options?: EngineOptions<A, T>) {
-    this.tasks = tasks;
     this.options = options ?? {};
-    for (const task of tasks) {
-      this.tasks_by_name.set(task.name, { ...this.options.default_task_options, ...task });
+    this.tasks = tasks.map((task) => ({ ...this.options.default_task_options, ...task }));
+    for (const task of this.tasks) {
+      this.tasks_by_name.set(task.name, task);
     }
     this.initPropertiesManager(this.propertyManager);
   }
