@@ -64,7 +64,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     this.tasks = tasks;
     this.options = options ?? {};
     for (const task of tasks) {
-      this.tasks_by_name.set(task.name, task);
+      this.tasks_by_name.set(task.name, { ...this.options.default_task_options, ...task });
     }
     this.initPropertiesManager(this.propertyManager);
   }
@@ -123,11 +123,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * This is the main entry point for the Engine.
    * @param task The current executing task.
    */
-  public execute(rawTask: T): void {
+  public execute(task: T): void {
     print(``);
-    print(`Executing ${rawTask.name}`, "blue");
-
-    const task = { ...this.options.default_task_options, ...rawTask };
+    print(`Executing ${task.name}`, "blue");
 
     // Determine the proper postcondition for after the task executes.
     const postcondition = task.limit?.guard?.();
