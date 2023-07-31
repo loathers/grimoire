@@ -38,7 +38,7 @@ export type Task<A extends string = never> = {
 
   acquire?: Delayed<AcquireItem[]>;
   effects?: Delayed<Effect[]>;
-  choices?: { [id: number]: Delayed<number | string> };
+  choices?: Delayed<{ [id: number]: number | string }>;
   limit?: Limit;
   outfit?: Delayed<OutfitSpec | Outfit>;
   combat?: CombatStrategy<A>;
