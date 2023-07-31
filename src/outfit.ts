@@ -156,7 +156,7 @@ export class Outfit {
 
   private isAvailable(item: Item): SuccessOrReason {
     if (this.avoid?.includes(item))
-      return `Cannot equip ${item} since it is on the avoid list (${this.avoid.join(", ")})`;
+      return `Cannot equip ${item} since it is on the avoid list (${this.avoid.join(", ")}).`;
     if (!have(item, this.equippedAmount(item) + 1)) {
       if (!have(item)) {
         return `Cannot equip ${item} since you do not have any.`;
@@ -189,7 +189,7 @@ export class Outfit {
   private equipNonAccessory(item: Item, slot?: Slot): SuccessOrReason {
     if ($slots`acc1, acc2, acc3`.includes(toSlot(item))) return "";
     if (slot !== undefined && slot !== toSlot(item))
-      return `Cannot equip ${item} to ${slot} since it is ${toSlot(item)}`;
+      return `Cannot equip ${item} to ${slot} since it is ${toSlot(item)}.`;
     slot = toSlot(item);
     if (this.equips.has(slot))
       return `Cannot equip ${item} to ${slot} since ${this.equips.get(slot)} is equipped.`;
@@ -203,7 +203,7 @@ export class Outfit {
         break;
       case $slot`familiar`:
         if (this.familiar !== undefined && !canEquip(this.familiar, item))
-          return `Cannot equip ${item} to ${slot} since familiar is ${this.familiar}`;
+          return `Cannot equip ${item} to ${slot} since familiar is ${this.familiar}.`;
     }
     if (slot !== $slot`familiar` && !canEquip(item))
       return `Cannot equip ${item} to ${slot} since canEquip returned false.`;
@@ -425,9 +425,7 @@ export class Outfit {
       else this.modifier.push(spec.modifier);
     }
     if (spec.modes) {
-      if (!this.setModes(spec.modes)) {
-        reasons.push(`Modes ${spec.modes} are incompatible with current modes ${this.modes}.`);
-      }
+      reasons.push(this.setModesVerbose(spec.modes));
     }
     if (spec.riders) {
       if (spec.riders["buddy-bjorn"])
