@@ -488,14 +488,11 @@ export class Outfit {
     }
 
     // Gather the set of riders that are equipped in other rider slots.
-    const other_riders: Familiar[] = [];
-    for (const other_rider_slot of this.riders.keys()) {
-      if (other_rider_slot === slot) continue;
-      const other_rider = this.riders.get(other_rider_slot);
-      if (other_rider) other_riders.push(other_rider);
-    }
+    const otherRiders = [...this.riders.entries()]
+      .filter(([key]) => slot !== key)
+      .map(([, value]) => value);
 
-    const fam = targets.find((f) => have(f) && this.familiar !== f && !other_riders.includes(f));
+    const fam = targets.find((f) => have(f) && this.familiar !== f && !otherRiders.includes(f));
     if (fam) {
       this.riders.set(slot, fam);
       return true;
