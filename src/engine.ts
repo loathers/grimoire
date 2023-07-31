@@ -223,7 +223,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       if (this.options.allow_partial_outfits) {
         outfit.equip(spec); // ignore return value
       } else {
-        outfit.forceEquip(spec);
+        outfit.forceEquip(spec, undefined, task.name);
       }
     }
     return outfit;

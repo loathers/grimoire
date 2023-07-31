@@ -523,11 +523,13 @@ export class Outfit {
    *
    * @param thing The thing or things to equip.
    * @param slot The slot to equip them.
+   * @param context Additional context to include in the error.
    */
-  forceEquip(thing: Equippable, slot?: Slot): void {
+  forceEquip(thing: Equippable, slot?: Slot, context?: string): void {
     const result = this.equipVerbose(thing, slot);
     if (result === true) return;
-    throw result;
+    const contextMsg = context ? ` (${context})` : "";
+    throw `Unable to equip ${thing}${contextMsg}: ${result}`;
   }
 
   /**
