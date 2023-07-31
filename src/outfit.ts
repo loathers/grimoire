@@ -119,6 +119,10 @@ function fail(msg: string): EquipResult {
 
 const SUCCESS: EquipResult = { success: true };
 
+/**
+ * Return success if any of the subcalls are success.
+ * Otherwise, merge all the error messages.
+ */
 function mergeResults(results: EquipResult[]) {
   const failures = results.filter((r) => !r.success) as { reason: string }[];
   if (failures.length === 0) return SUCCESS;
