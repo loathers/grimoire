@@ -3,7 +3,7 @@ import { Delayed, get } from "libram";
 import { StringProperty } from "libram/dist/propertyTypes";
 import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
-import { Outfit, OutfitSpec } from "./outfit";
+import { OptionalOutfitSpec, Outfit, OutfitSpec } from "./outfit";
 
 export type Quest<T> = {
   name: string;
@@ -41,6 +41,7 @@ export type Task<A extends string = never> = {
   choices?: Delayed<{ [id: number]: number | string }>;
   limit?: Limit;
   outfit?: Delayed<OutfitSpec | Outfit>;
+  optional?: Delayed<OptionalOutfitSpec | Outfit>;
   combat?: CombatStrategy<A>;
 };
 

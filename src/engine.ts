@@ -234,6 +234,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    */
   dress(task: T, outfit: Outfit): void {
     if (task.do instanceof Location) setLocation(task.do);
+    if (task.optional) outfit.equip(undelay(task.optional));
     outfit.dress();
   }
 

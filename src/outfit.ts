@@ -72,6 +72,9 @@ export interface OutfitSpec extends OutfitEquips {
   afterDress?: (() => void)[];
 }
 
+export type OptionalOutfitSpec = OutfitEquips &
+  Pick<OutfitSpec, "equip" | "modes" | "familiar" | "riders">;
+
 export type Modes = {
   backupcamera?: "ml" | "meat" | "init";
   umbrella?:
