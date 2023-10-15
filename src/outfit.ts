@@ -136,9 +136,14 @@ function success(): EquipResult {
  * Otherwise, merge all the error messages.
  */
 function mergeResults(results: EquipResult[]) {
+  if (results.find((r) => r.success)) return success();
   const failures = results.filter((r) => !r.success) as { reason: string }[];
-  if (failures.length === 0) return success();
-  return fail(failures.map((r) => r.reason).join(". "));
+  return fail(
+    failures
+      .filter((r) => r.reason !== "")
+      .map((r) => r.reason)
+      .join(". ")
+  );
 }
 
 export class Outfit {
@@ -427,7 +432,7 @@ export class Outfit {
       if (try_equip_method.success) return success();
       else reasons.push(try_equip_method);
     }
-    return fail(reasons.map((r) => r.reason).join(". "));
+    return mergeResults(reasons);
   }
 
   private equipFamiliar(familiar: Familiar): EquipResult {
