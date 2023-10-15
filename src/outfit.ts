@@ -520,7 +520,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, or a reason why it could not be equipped.
    */
-  equipVerbose(thing: Equippable, slot?: Slot): EquipResult {
+  public equipVerbose(thing: Equippable, slot?: Slot): EquipResult {
     if (Array.isArray(thing)) {
       if (slot !== undefined) {
         // Equip the first thing in the list that is possible.
@@ -566,7 +566,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @returns True if the thing was sucessfully equipped, and false otherwise.
    */
-  equip(thing: Equippable, slot?: Slot): boolean {
+  public equip(thing: Equippable, slot?: Slot): boolean {
     return this.equipVerbose(thing, slot).success;
   }
 
@@ -578,7 +578,7 @@ export class Outfit {
    * @param slot The slot to equip them.
    * @param context Additional context to include in the error.
    */
-  forceEquip(thing: Equippable, slot?: Slot, context?: string): void {
+  public forceEquip(thing: Equippable, slot?: Slot, context?: string): void {
     const result = this.equipVerbose(thing, slot);
     if (result.success) return;
     const contextMsg = context ? ` (${context})` : "";
