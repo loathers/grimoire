@@ -8,6 +8,7 @@ import { Outfit, OutfitSpec } from "./outfit";
 export type Quest<T> = {
   name: string;
   completed?: () => boolean;
+  ready?: () => boolean;
   tasks: T[];
 };
 

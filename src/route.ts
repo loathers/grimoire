@@ -23,6 +23,7 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
   const result: T[] = [];
   for (const quest of quests) {
     const questCompleted = quest.completed;
+    const questReady = quest.ready;
     for (const task of quest.tasks) {
       // Include quest name in task names and dependencies (unless dependency quest is given)
       const renamedTask = { ...task };
@@ -37,6 +38,12 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
       if (questCompleted !== undefined) {
         const taskCompleted = task.completed;
         renamedTask.completed = () => questCompleted() || taskCompleted();
+      }
+      const taskReady = renamedTask.ready;
+      if (questReady !== undefined && taskReady !== undefined) {
+        renamedTask.ready = () => questReady() && taskReady();
+      } else if (questReady !== undefined) {
+        renamedTask.ready = () => questReady();
       }
       result.push(renamedTask);
     }
