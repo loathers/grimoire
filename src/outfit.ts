@@ -88,6 +88,7 @@ export type Modes = {
     "hold" | "thrill" | "kiss" | "kill" | undefined
   ]; // Undefined means "don't care"
   parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
+  jillcandle?: "disco" | "ultraviolet" | "reading" | "red";
 };
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
@@ -99,6 +100,7 @@ const modeableCommands = [
   "edpiece",
   "retrocape",
   "parka",
+  "jillcandle",
 ] as const;
 
 export class Outfit {
