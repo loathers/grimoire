@@ -231,18 +231,18 @@ export class CombatStrategy<A extends string = never> {
 
     // If there is macro precursor, do it now
     if (this.starting_macro) {
-      result.step(...this.starting_macro.map(undelay));
+      result.step(...this.starting_macro.map((macro) => undelay(macro)));
     }
 
     // Perform any monster-specific macros (these may or may not end the fight)
     const monster_macros = new CompressedMacro();
     this.macros.forEach((value, key) => {
-      monster_macros.add(key, new Macro().step(...value.map(undelay)));
+      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro))));
     });
     result.step(monster_macros.compile());
 
     // Perform the non-monster specific macro
-    if (this.default_macro) result.step(...this.default_macro.map(undelay));
+    if (this.default_macro) result.step(...this.default_macro.map((macro) => undelay(macro)));
 
     // Perform any monster-specific actions (these should end the fight)
     const monster_actions = new CompressedMacro();
@@ -272,12 +272,13 @@ export class CombatStrategy<A extends string = never> {
     // Perform any monster-specific autoattacks (these may or may not end the fight)
     const monster_macros = new CompressedMacro();
     this.autoattacks.forEach((value, key) => {
-      monster_macros.add(key, new Macro().step(...value.map(undelay)));
+      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro))));
     });
     result.step(monster_macros.compile());
 
     // Perform the non-monster specific macro
-    if (this.default_autoattack) result.step(...this.default_autoattack.map(undelay));
+    if (this.default_autoattack)
+      result.step(...this.default_autoattack.map((macro) => undelay(macro)));
 
     return result;
   }
