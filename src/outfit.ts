@@ -702,7 +702,7 @@ export class Outfit {
 
     // Remaining slots are filled by the maximizer
     const modes = convertToLibramModes(this.modes);
-    if (this.modifier.length > 0) {
+    if (this.modifier.length > 0 || [...this.bonuses].filter(([, value]) => value).length > 0) {
       const allRequirements = [
         new Requirement(this.modifier, {
           preventSlot: [...usedSlots],
