@@ -88,6 +88,7 @@ export type Modes = {
     "hold" | "thrill" | "kiss" | "kill" | undefined
   ]; // Undefined means "don't care"
   parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
+  jillcandle?: "disco" | "ultraviolet" | "reading" | "red";
 };
 
 const weaponHands = (i?: Item) => (i ? mafiaWeaponHands(i) : 0);
@@ -99,6 +100,7 @@ const modeableCommands = [
   "edpiece",
   "retrocape",
   "parka",
+  "jillcandle",
 ] as const;
 
 export class Outfit {
@@ -835,7 +837,9 @@ export class Outfit {
  *
  * @returns The modes equipped to this outfit.
  */
-export function convertToLibramModes(modes: Modes): LibramModes {
+export function convertToLibramModes(
+  modes: Modes
+): LibramModes & Record<keyof LibramModes, unknown> {
   return {
     backupcamera: modes["backupcamera"],
     umbrella: modes["umbrella"],
@@ -843,6 +847,7 @@ export function convertToLibramModes(modes: Modes): LibramModes {
     edpiece: modes["edpiece"],
     retrocape: modes["retrocape"]?.filter((s) => s !== undefined).join(" "),
     parka: modes["parka"],
+    jillcandle: modes["jillcandle"],
   };
 }
 
@@ -855,7 +860,7 @@ export function convertFromLibramModes(modes: LibramModes): Modes {
  *
  * @returns The current mode settings for all items, equipped or not.
  */
-export function getCurrentModes(): Modes {
+export function getCurrentModes(): Modes & Record<keyof Modes, unknown> {
   return {
     backupcamera: getMode("backupCameraMode", ["ml", "meat", "init"]),
     umbrella: getMode("umbrellaState", [
@@ -879,6 +884,7 @@ export function getCurrentModes(): Modes {
       "spikolodon",
       "pterodactyl",
     ]),
+    jillcandle: getMode("jillcandle", ["disco", "ultraviolet", "reading", "red"]),
   };
 }
 

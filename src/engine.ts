@@ -1,5 +1,7 @@
 import { Task } from "./task";
 import {
+  $location,
+  $locations,
   $skill,
   ensureEffect,
   get,
@@ -509,8 +511,8 @@ export const wanderingNCs = new Set<string>([
   "Silent Strolling",
 ]);
 
-export const zoneSpecificNCs = new Map<string, string[]>([
-  ["The Horror...", ["Frat House"]], // Duplicate choice name
+export const zoneSpecificNCs = new Map<string, Location[]>([
+  ["The Horror...", $locations`Frat House`], // Duplicate choice name
 ]);
 
 /**
@@ -525,7 +527,7 @@ export function lastEncounterWasWanderingNC(): boolean {
   if (zoneSpecificNCs.has(last)) {
     // Handle NCs with a duplicated name
     const zones = zoneSpecificNCs.get(last) ?? [];
-    return zones.includes(get("lastAdventure"));
+    return zones.includes(get("lastAdventure") ?? $location.none);
   } else {
     return wanderingNCs.has(last);
   }
