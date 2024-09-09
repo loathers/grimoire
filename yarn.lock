@@ -3315,7 +3315,7 @@ __metadata:
     eslint: "npm:^7.32.0"
     eslint-config-prettier: "npm:^8.3.0"
     eslint-plugin-libram: "npm:^0.2.32"
-    prettier: "npm:^2.3.2"
+    prettier: "npm:^3.3.1"
     typescript: "npm:^4.4.2"
     webpack: "npm:^5.61.0"
     webpack-cli: "npm:^4.8.0"
@@ -4576,12 +4576,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^2.3.2":
-  version: 2.7.1
-  resolution: "prettier@npm:2.7.1"
+"prettier@npm:^3.3.1":
+  version: 3.3.3
+  resolution: "prettier@npm:3.3.3"
   bin:
-    prettier: bin-prettier.js
-  checksum: 10c0/359d2b7ecf36bd52924a48331cae506d335f18637fde6c686212f952b9ce678ce9f554a80571049b36ec2897a8a6c40094b776dea371cc5c04c481cf5b78504b
+    prettier: bin/prettier.cjs
+  checksum: 10c0/b85828b08e7505716324e4245549b9205c0cacb25342a030ba8885aba2039a115dbcf75a0b7ca3b37bc9d101ee61fab8113fc69ca3359f2a226f1ecc07ad2e26
   languageName: node
   linkType: hard
 
