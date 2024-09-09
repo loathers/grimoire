@@ -13,6 +13,7 @@ import {
   printHtml,
   Skill,
 } from "kolmafia";
+import { Delayed, undelay } from "libram";
 
 /**
  * Specification for an argument that takes values in T.
@@ -36,7 +37,7 @@ interface ArgSpec<T> {
   options?: [T, string?][];
   setting?: string;
   hidden?: boolean;
-  default: T;
+  default: Delayed<T>;
 }
 /**
  * Allow the default argument to be optional, in a way that allows for cool type inference.
@@ -59,7 +60,7 @@ type ArgSpecNoDefault<T> = Omit<ArgSpec<T>, "default">;
 interface ArraySpec<T> extends ArgSpecNoDefault<T> {
   separator?: string;
   noTrim?: boolean;
-  default: T[];
+  default: Delayed<T>[];
 }
 type ArraySpecNoDefault<T> = Omit<ArraySpec<T>, "default">;
 
@@ -91,8 +92,9 @@ export class Args {
 
     // Check that the default value actually appears in the options.
     if ("default" in spec && raw_options) {
-      if (!raw_options.includes(spec.default)) {
-        throw `Invalid default value ${spec.default}`;
+      const def = undelay(spec.default);
+      if (!raw_options.includes(def)) {
+        throw `Invalid default value ${def}`;
       }
     }
 
@@ -146,7 +148,8 @@ export class Args {
     const raw_options = spec.options?.map((option) => option[0]);
     if ("default" in spec && raw_options) {
       for (const default_entry of spec.default) {
-        if (!raw_options.includes(default_entry)) throw `Invalid default value ${spec.default}`;
+        const def = undelay(default_entry);
+        if (!raw_options.includes(def)) throw `Invalid default value ${undelay(spec.default)}`;
       }
     }
 
@@ -815,7 +818,7 @@ function loadDefaultValues<T extends ArgMap>(spec: T): ParsedGroup<T> {
     if ("args" in argSpec) {
       result[k] = loadDefaultValues(argSpec.args);
     } else {
-      if ("default" in argSpec) result[k] = argSpec.default;
+      if ("default" in argSpec) result[k] = undelay(argSpec.default);
       else result[k] = undefined;
     }
   }
