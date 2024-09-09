@@ -31,6 +31,8 @@
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-libram": "^0.2.32",
+    "kolmafia": "^5.28037.0",
+    "libram": "^0.9.6",
     "prettier": "^3.3.1",
     "typescript": "^4.4.2",
     "webpack": "^5.61.0",
