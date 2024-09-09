@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 env:
-  node-version: "18"
+  node-version: "20"
 
 jobs:
   lint:
