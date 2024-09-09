@@ -47,13 +47,13 @@ export const outfitSlots = [
   "famequip",
 ] as const;
 
-export type OutfitSlot = typeof outfitSlots[number];
+export type OutfitSlot = (typeof outfitSlots)[number];
 
 export type OutfitEquips = Partial<{ [slot in OutfitSlot]: Item | Item[] }>;
 
 export const riderSlots = ["buddy-bjorn", "crown-of-thrones"] as const;
 
-export type RiderSlot = typeof riderSlots[number];
+export type RiderSlot = (typeof riderSlots)[number];
 
 export type OutfitRiders = Partial<{ [slot in RiderSlot]: Familiar | Familiar[] }>;
 
@@ -85,7 +85,7 @@ export type Modes = {
   edpiece?: "bear" | "owl" | "puma" | "hyena" | "mouse" | "weasel" | "fish";
   retrocape?: [
     "vampire" | "heck" | "robot" | undefined,
-    "hold" | "thrill" | "kiss" | "kill" | undefined
+    "hold" | "thrill" | "kiss" | "kill" | undefined,
   ]; // Undefined means "don't care"
   parka?: "kachungasaur" | "dilophosaur" | "ghostasaurus" | "spikolodon" | "pterodactyl";
   jillcandle?: "disco" | "ultraviolet" | "reading" | "red";
@@ -457,7 +457,7 @@ export class Outfit {
       }
       // Not sure if this is necessary
       const cleanedResult = Object.fromEntries(
-        [...Object.entries(result)].filter(([, v]) => v !== undefined)
+        [...Object.entries(result)].filter(([, v]) => v !== undefined),
       );
       return Outfit.from(cleanedResult);
     }
@@ -681,7 +681,7 @@ export class Outfit {
     const missingAccessories = []; // accessories that are not already equipped
     for (const accessory of accessoryEquips) {
       const alreadyEquipped = accessorySlots.find(
-        (slot) => !usedSlots.has(slot) && equippedItem(slot) === accessory
+        (slot) => !usedSlots.has(slot) && equippedItem(slot) === accessory,
       );
       if (alreadyEquipped) {
         usedSlots.add(alreadyEquipped);
@@ -808,7 +808,7 @@ export class Outfit {
         new Map([
           ["famequip", $slot`familiar`],
           ["offhand", $slot`off-hand`],
-        ]).get(slotName) ?? toSlot(slotName)
+        ]).get(slotName) ?? toSlot(slotName),
       );
 
       if (entry) result[slotName] = entry;
@@ -838,7 +838,7 @@ export class Outfit {
  * @returns The modes equipped to this outfit.
  */
 export function convertToLibramModes(
-  modes: Modes
+  modes: Modes,
 ): LibramModes & Record<keyof LibramModes, unknown> {
   return {
     backupcamera: modes["backupcamera"],
