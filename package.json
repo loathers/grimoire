@@ -56,5 +56,6 @@
   "bugs": {
     "url": "https://github.com/loathing-Associates-Scripting-Society/grimoire/issues"
   },
-  "homepage": "https://github.com/loathing-Associates-Scripting-Society/grimoire/grimoire"
+  "homepage": "https://github.com/loathing-Associates-Scripting-Society/grimoire/grimoire",
+  "packageManager": "yarn@4.4.1"
 }
