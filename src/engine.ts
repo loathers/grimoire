@@ -256,7 +256,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     task: T,
     outfit: Outfit,
     combat: CombatStrategy<A>,
-    resources: CombatResources<A>
+    resources: CombatResources<A>,
   ): void {
     // do nothing by default
   }
@@ -285,7 +285,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     const macro = task_combat.compile(
       task_resources,
       this.options?.combat_defaults,
-      task.do instanceof Location ? task.do : undefined
+      task.do instanceof Location ? task.do : undefined,
     );
     macro.save();
     if (!this.options.ccs) {

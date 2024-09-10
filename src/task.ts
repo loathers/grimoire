@@ -48,7 +48,7 @@ export type Task<A extends string = never> = {
 export type StrictCombatTask<
   A extends string = never,
   C extends CombatStrategy<A> = CombatStrategy<A>,
-  O extends OutfitSpec | Outfit = OutfitSpec | Outfit
+  O extends OutfitSpec | Outfit = OutfitSpec | Outfit,
 > = Omit<Task, "do" | "combat" | "outfit"> &
   (
     | {

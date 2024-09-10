@@ -56,7 +56,7 @@ export class Guards {
   static changed(property: string): Guard {
     return this.create<string>(
       () => get(property),
-      (old: string) => get(property) !== old
+      (old: string) => get(property) !== old,
     );
   }
 }

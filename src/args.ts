@@ -80,12 +80,12 @@ export class Args {
   static custom<T>(
     spec: ArgSpecNoDefault<T>,
     parser: Parser<T>,
-    valueHelpName: string
+    valueHelpName: string,
   ): ArgNoDefault<T>;
   static custom<T>(
     spec: ArgSpec<T> | ArgSpecNoDefault<T>,
     parser: Parser<T>,
-    valueHelpName: string
+    valueHelpName: string,
   ): Arg<T> | ArgNoDefault<T> {
     const raw_options = spec.options?.map((option) => option[0]);
 
@@ -122,15 +122,15 @@ export class Args {
    */
   private static arrayFromArg<T>(
     spec: ArraySpecNoDefault<T>,
-    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>
+    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>,
   ): ArgNoDefault<T[]>;
   private static arrayFromArg<T>(
     spec: ArraySpec<T>,
-    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>
+    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>,
   ): Arg<T[]>;
   private static arrayFromArg<T>(
     spec: ArraySpec<T> | ArraySpecNoDefault<T>,
-    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>
+    argFromSpec: (spec: ArgSpecNoDefault<T>) => ArgNoDefault<T>,
   ): Arg<T[]> | ArgNoDefault<T[]> {
     // First, construct a non-array version of this argument.
     // We do this by calling argFromSpec in order to extract the parser and
@@ -163,7 +163,7 @@ export class Args {
       const failure_index = result.indexOf(undefined);
       if (failure_index !== -1)
         return new ParseError(
-          `components expected ${arg.valueHelpName} but could not parse ${values[failure_index]}`
+          `components expected ${arg.valueHelpName} but could not parse ${values[failure_index]}`,
         );
 
       // Otherwise, all values are good
@@ -208,7 +208,7 @@ export class Args {
     return this.custom(
       spec,
       (value: string) => (isNaN(Number(value)) ? undefined : Number(value)),
-      "NUMBER"
+      "NUMBER",
     );
   }
 
@@ -236,7 +236,7 @@ export class Args {
         if (value.toLowerCase() === "false") return false;
         return undefined;
       },
-      "BOOLEAN"
+      "BOOLEAN",
     );
   }
 
@@ -264,7 +264,7 @@ export class Args {
         if (value.toLowerCase() === "false") return false;
         return undefined;
       },
-      "FLAG"
+      "FLAG",
     );
   }
 
@@ -286,7 +286,7 @@ export class Args {
         if (!isNaN(Number(value))) return match;
         return undefined;
       },
-      "CLASS"
+      "CLASS",
     );
   }
 
@@ -472,7 +472,7 @@ export class Args {
     scriptName: string,
     scriptHelp: string,
     args: T,
-    options?: ArgOptions
+    options?: ArgOptions,
   ): ParsedArgs<T> & { help: boolean } {
     traverse(args, (keySpec, key) => {
       if (key === "help" || keySpec.key === "help") throw `help is a reserved argument name`;
@@ -515,7 +515,7 @@ export class Args {
   static fill<T extends ArgMap>(
     args: ParsedArgs<T>,
     command: string | undefined,
-    includeSettings = true
+    includeSettings = true,
   ): void {
     const metadata = Args.getMetadata(args);
 
@@ -546,7 +546,7 @@ export class Args {
       command,
       keys,
       flags,
-      metadata.options.positionalArgs ?? []
+      metadata.options.positionalArgs ?? [],
     ).parse();
     metadata.traverseAndMaybeSet(args, (keySpec, key) => {
       const argKey = keySpec.key ?? key;
@@ -569,7 +569,7 @@ export class Args {
     scriptHelp: string,
     spec: T,
     command: string,
-    options?: ArgOptions
+    options?: ArgOptions,
   ): ParsedArgs<T> {
     const args = this.create(scriptName, scriptHelp, spec, options);
     this.fill(args, command);
@@ -612,18 +612,18 @@ export class Args {
               }]</font>`;
 
         printHtml(
-          `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`
+          `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`,
         );
         const valueOptions = arg.options ?? [];
         if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
           for (const option of valueOptions) {
             if (option.length === 1 || option[1] === undefined) {
               printHtml(
-                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`
+                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]}`,
               );
             } else {
               printHtml(
-                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]} - ${option[1]}`
+                `&nbsp;&nbsp;&nbsp;&nbsp;<font color='blue'>${nameText}</font> ${option[0]} - ${option[1]}`,
               );
             }
           }
@@ -632,7 +632,7 @@ export class Args {
       (group) => {
         printHtml("");
         printHtml(`<b>${group.name}:</b>`);
-      }
+      },
     );
   }
 
@@ -722,10 +722,10 @@ type ParsedGroup<T extends ArgMap> = {
   [k in keyof T]: T[k] extends ArgGroup<any>
     ? ParsedGroup<T[k]["args"]>
     : T[k] extends Arg<unknown>
-    ? Exclude<ReturnType<T[k]["parser"]>, undefined | ParseError>
-    : T[k] extends ArgNoDefault<unknown>
-    ? Exclude<ReturnType<T[k]["parser"]>, ParseError>
-    : never;
+      ? Exclude<ReturnType<T[k]["parser"]>, undefined | ParseError>
+      : T[k] extends ArgNoDefault<unknown>
+        ? Exclude<ReturnType<T[k]["parser"]>, ParseError>
+        : never;
 };
 type ParsedArgs<T extends ArgMap> = ParsedGroup<T> & ArgMetadata<T>;
 
@@ -785,7 +785,7 @@ class WrappedArgMetadata<T extends ArgMap> {
    */
   traverseAndMaybeSet(
     result: ParsedArgs<T>,
-    setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+    setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined,
   ) {
     return traverseAndMaybeSet(this.spec, result, setTo);
   }
@@ -797,7 +797,7 @@ class WrappedArgMetadata<T extends ArgMap> {
    */
   traverse(
     process: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => void,
-    onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void
+    onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void,
   ) {
     return traverse(this.spec, process, onGroup);
   }
@@ -833,7 +833,7 @@ function loadDefaultValues<T extends ArgMap>(spec: T): ParsedGroup<T> {
 function traverseAndMaybeSet<T extends ArgMap>(
   spec: T,
   result: ParsedArgs<T>,
-  setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined
+  setTo: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => S | undefined,
 ) {
   const groups: [ArgGroup<ArgMap>, string][] = [];
   for (const k in spec) {
@@ -861,7 +861,7 @@ function traverseAndMaybeSet<T extends ArgMap>(
 function traverse<T extends ArgMap>(
   spec: T,
   process: <S>(keySpec: Arg<S> | ArgNoDefault<S>, key: string) => void,
-  onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void
+  onGroup?: <S extends ArgMap>(groupSpec: ArgGroup<S>, key: string) => void,
 ) {
   const groups: [ArgGroup<ArgMap>, string][] = [];
   for (const k in spec) {

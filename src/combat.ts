@@ -225,7 +225,7 @@ export class CombatStrategy<A extends string = never> {
   public compile(
     resources: CombatResources<A>,
     defaults: ActionDefaults<A> | undefined,
-    location: Location | undefined
+    location: Location | undefined,
   ): Macro {
     const result = new Macro();
 
@@ -338,7 +338,7 @@ export type ActionDefaults<A extends string> = Record<
 type Constructor<T> = new () => T;
 export type CombatStrategyWith<A extends string> = {
   [k in A as k extends keyof CombatStrategy<A> ? never : k]: (
-    monsters?: Monster[] | Monster
+    monsters?: Monster[] | Monster,
   ) => CombatStrategyWith<A>;
 } & CombatStrategy<A>;
 
