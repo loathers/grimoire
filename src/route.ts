@@ -19,6 +19,7 @@ import { Quest, Task } from "./task";
 export function getTasks<A extends string, T extends Task<A> = Task<A>>(
   quests: Quest<T>[],
   implicitAfter = false,
+  verifyTaskDependencies = true,
 ): T[] {
   const result: T[] = [];
   for (const quest of quests) {
@@ -49,17 +50,22 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
     }
   }
 
+  if (verifyTaskDependencies) verifyDependencies(result);
+  return result;
+}
+
+export function verifyDependencies<A extends string>(tasks: Task<A>[]) {
   // Verify the dependency names of all tasks
   const names = new Set<string>();
-  for (const task of result) names.add(task.name);
-  for (const task of result) {
+  for (const task of tasks) names.add(task.name);
+  for (const task of tasks) {
     for (const after of task.after ?? []) {
       if (!names.has(after)) {
         throw `Unknown task dependency ${after} of ${task.name}`;
       }
     }
   }
-  return result;
+  return tasks;
 }
 
 export function orderByRoute<A extends string, T extends Task<A> = Task<A>>(
