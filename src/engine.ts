@@ -1,7 +1,6 @@
 import { Task } from "./task";
 import {
   $location,
-  $locations,
   $skill,
   ensureEffect,
   EnvironmentType,
@@ -491,7 +490,6 @@ export const environmentSpecificNCs = new Map<string, EnvironmentType>([
 ]);
 
 export const zoneSpecificNCs = new Map<string, Location[]>([
-  ["The Horror...", $locations`Frat House`], // Duplicate choice name
   ...fileToBuffer("data/encounters.txt")
     .split("\n")
     .map((line) => line.split("\t"))
