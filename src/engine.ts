@@ -128,8 +128,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    */
   public execute(task: T): void {
-    print(``);
-    print(`Executing ${task.name}`, "blue");
+    this.printExecutingMessage(task);
 
     // Determine the proper postcondition for after the task executes.
     const postcondition = task.limit?.guard?.();
@@ -163,6 +162,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     // Mark that we tried the task, and apply limits
     this.markAttempt(task);
     this.checkLimits(task, postcondition);
+  }
+
+  /**
+   * Print a message to indicate the task has begun.
+   * @param task The current executing task.
+   */
+  printExecutingMessage(task: T): void {
+    print(``);
+    print(`Executing ${task.name}`, "blue");
   }
 
   /**
