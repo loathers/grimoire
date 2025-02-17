@@ -1,9 +1,9 @@
 import { Task } from "./task";
 import {
   $location,
-  $locations,
   $skill,
   ensureEffect,
+  EnvironmentType,
   get,
   have,
   isSong,
@@ -20,6 +20,7 @@ import {
   cliExecute,
   Effect,
   equippedAmount,
+  fileToBuffer,
   getRelated,
   inMultiFight,
   itemAmount,
@@ -34,6 +35,7 @@ import {
   setAutoAttack,
   setLocation,
   toEffect,
+  toLocation,
   writeCcs,
 } from "kolmafia";
 import { Outfit } from "./outfit";
@@ -470,49 +472,29 @@ export const wanderingNCs = new Set<string>([
   "Teacher's Pet",
   // Lil' Doctor™ bag noncombat
   "A Pound of Cure",
-  // Turtle taming noncombats
-  "Nantucket Snapper",
-  "Blue Monday",
-  "Capital!",
-  "Training Day",
-  "Boxed In",
-  "Duel Nature",
-  "Slow Food",
-  "A Rolling Turtle Gathers No Moss",
-  "Slow Road to Hell",
-  "C'mere, Little Fella",
-  "The Real Victims",
-  "Like That Time in Tortuga",
-  "Cleansing your Palette",
-  "Harem Scarum",
-  "Turtle in peril",
-  "No Man, No Hole",
-  "Slow and Steady Wins the Brawl",
-  "Stormy Weather",
-  "Turtles of the Universe",
-  "O Turtle Were Art Thou",
-  "Allow 6-8 Weeks For Delivery",
-  "Kick the Can",
-  "Turtles All The Way Around",
-  "More eXtreme Than Usual",
-  "Jewel in the Rough",
-  "The worst kind of drowning",
-  "Even Tamer Than Usual",
-  "Never Break the Chain",
-  "Close, but Yes Cigar",
-  "Armchair Quarterback",
-  "This Turtle Rocks!",
-  "Really Sticking Her Neck Out",
-  "It Came from Beneath the Sewer? Great!",
-  "Don't Be Alarmed, Now",
-  "Puttin' it on Wax",
-  "More Like... Hurtle",
-  "Musk! Musk! Musk!",
-  "Silent Strolling",
+]);
+
+export const environmentSpecificNCs = new Map<string, EnvironmentType>([
+  ["Even Tamer Than Usual", "indoor"],
+  ["Never Break the Chain", "indoor"],
+  ["Close, but Yes Cigar", "indoor"],
+  ["Armchair Quarterback", "indoor"],
+  ["This Turtle Rocks!", "outdoor"],
+  ["Really Sticking Her Neck Out", "outdoor"],
+  ["It Came from Beneath the Sewer? Great!", "outdoor"],
+  ["Don't Be Alarmed, Now", "outdoor"],
+  ["Puttin' it on Wax", "underground"],
+  ["More Like... Hurtle", "underground"],
+  ["Musk! Musk! Musk!", "underground"],
+  ["Silent Strolling", "underwater"],
 ]);
 
 export const zoneSpecificNCs = new Map<string, Location[]>([
-  ["The Horror...", $locations`Frat House`], // Duplicate choice name
+  ...fileToBuffer("data/encounters.txt")
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter(([location, type]) => location !== "*" && type === "TURTLE")
+    .map(([location, , name]): [string, Location[]] => [name, [toLocation(location)]]),
 ]);
 
 /**
@@ -529,6 +511,8 @@ export function lastEncounterWasWanderingNC(): boolean {
     const zones = zoneSpecificNCs.get(last) ?? [];
     return zones.includes(get("lastAdventure") ?? $location.none);
   } else {
+    const environment = environmentSpecificNCs.get(last);
+    if (environment === get("lastAdventure")?.environment) return true;
     return wanderingNCs.has(last);
   }
 }
