@@ -504,7 +504,7 @@ export const zoneSpecificNCs = new Map<string, Location[]>(
       .reduce(
         (obj, line) => {
           const [location, type, name] = line.split("\t");
-          if (type !== "TURTLE") return obj;
+          if (type !== "TURTLE" || location === "*") return obj;
           return { ...obj, [name]: [...(obj[name] ?? []), toLocation(location)] };
         },
         {} as Record<string, Location[]>,
