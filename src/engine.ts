@@ -497,13 +497,15 @@ export const environmentSpecificNCs = new Map<string, EnvironmentType>([
   ["Silent Strolling", "underwater"],
 ]);
 
-export const zoneSpecificNCs = new Map<string, Location[]>([
-  ...fileToBuffer("data/encounters.txt")
-    .split("\n")
-    .map((line) => line.split("\t"))
-    .filter(([location, type]) => location !== "*" && type === "TURTLE")
-    .map(([location, , name]): [string, Location[]] => [name, [toLocation(location)]]),
-]);
+export const zoneSpecificNCs = new Map<string, Location[]>();
+
+for (const line of fileToBuffer("data/encounters.txt").split("\n")) {
+  const [location, type, name] = line.split("\t");
+  if (type !== "TURTLE") continue;
+  const current = zoneSpecificNCs.get(name);
+  if (current) current.push(toLocation(location));
+  else zoneSpecificNCs.set(name, [toLocation(location)]);
+}
 
 /**
  * Return true if the last adv was one of:
