@@ -228,6 +228,7 @@ export class CombatStrategy<A extends string = never, Context = void> {
    * @param resources The resources to use to fulfil actions.
    * @param defaults Macros to perform for each action without a resource.
    * @param location The adventuring location, if known.
+   * @param ctx: The current engine state to be passed to task functions.
    * @returns The compiled macro.
    */
   public compile(
@@ -273,6 +274,7 @@ export class CombatStrategy<A extends string = never, Context = void> {
   /**
    * Compile the autoattack of this combat strategy into a complete macro.
    *
+   * @param ctx: The current engine state to be passed to task functions.
    * @returns The compiled autoattack macro.
    */
   public compileAutoattack(ctx: Context): Macro {

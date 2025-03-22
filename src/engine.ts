@@ -55,6 +55,10 @@ export class EngineOptions<
 
 const grimoireCCS = "grimoire_macro";
 
+/**
+ * An Engine which allows for custom engine state. Most beginning users should
+ * use the Engine class instead.
+ */
 export abstract class ContextualEngine<
   A extends string = never,
   Context = void,
@@ -86,6 +90,7 @@ export abstract class ContextualEngine<
   /**
    * Determine the next task to perform.
    * By default, this is the first task in the task list that is available.
+   * @param ctx: The current engine state to be passed to task functions.
    * @returns The next task to perform, or undefined if no tasks are available.
    */
   public getNextTask(ctx: Context): T | undefined {
@@ -116,6 +121,8 @@ export abstract class ContextualEngine<
 
   /**
    * Check if the given task is available at this moment.
+   * @param task: The task to check.
+   * @param ctx: The current engine state to be passed to task functions.
    * @returns true if all dependencies are complete and the task is ready.
    *  Note that dependencies are not checked transitively. That is, if
    *  A depends on B which depends on C, then A is ready if B is complete
@@ -137,6 +144,7 @@ export abstract class ContextualEngine<
    * Perform all steps to execute the provided task.
    * This is the main entry point for the Engine.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   public execute(task: T, ctx: Context): void {
     this.printExecutingMessage(task, ctx);
@@ -178,6 +186,7 @@ export abstract class ContextualEngine<
   /**
    * Print a message to indicate the task has begun.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   printExecutingMessage(task: T, ctx: Context): void {
@@ -188,6 +197,7 @@ export abstract class ContextualEngine<
   /**
    * Acquire all items for the task.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   acquireItems(task: T, ctx: Context): void {
     const acquire = undelay(task.acquire, ctx);
@@ -214,6 +224,7 @@ export abstract class ContextualEngine<
   /**
    * Acquire all effects for the task.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   acquireEffects(task: T, ctx: Context): void {
     const effects: Effect[] = undelay(task.effects, ctx) ?? [];
@@ -237,6 +248,7 @@ export abstract class ContextualEngine<
   /**
    * Create an outfit for the task with all required equipment.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   createOutfit(task: T, ctx: Context): Outfit {
     const spec = undelay(task.outfit, ctx);
@@ -255,6 +267,7 @@ export abstract class ContextualEngine<
    * Equip the outfit for the task.
    * @param task The current executing task.
    * @param outfit The outfit for the task, possibly augmented by the engine.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   dress(task: T, outfit: Outfit, ctx: Context): void {
@@ -274,6 +287,7 @@ export abstract class ContextualEngine<
    * @param outfit The outfit for the task.
    * @param combat The combat strategy so far for the task.
    * @param resources The combat resources assigned so far for the task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   customize(
     task: T,
@@ -290,6 +304,7 @@ export abstract class ContextualEngine<
    * Set the choice settings for the task.
    * @param task The current executing task.
    * @param manager The property manager to use.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   setChoices(task: T, manager: PropertiesManager, ctx: Context): void {
     for (const [key, value] of Object.entries(undelay(task.choices ?? {}, ctx))) {
@@ -303,6 +318,7 @@ export abstract class ContextualEngine<
    * @param task The current executing task.
    * @param task_combat The completed combat strategy far for the task.
    * @param task_resources The combat resources assigned for the task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   setCombat(
     task: T,
@@ -346,6 +362,7 @@ export abstract class ContextualEngine<
   /**
    * Do any task-specific preparation.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   prepare(task: T, ctx: Context): void {
     task.prepare?.(ctx);
@@ -354,6 +371,7 @@ export abstract class ContextualEngine<
   /**
    * Actually perform the task.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   do(task: T, ctx: Context): void {
     const result = typeof task.do === "function" ? task.do(ctx) : task.do;
@@ -372,6 +390,7 @@ export abstract class ContextualEngine<
    *   3. Lil' Doctor™ bag noncombat, or
    *   4. Turtle taming noncombats.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    * @returns True if the task should be immediately repeated.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -382,6 +401,7 @@ export abstract class ContextualEngine<
   /**
    * Do any task-specific wrapup activities.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   post(task: T, ctx: Context): void {
     task.post?.(ctx);
@@ -390,6 +410,7 @@ export abstract class ContextualEngine<
   /**
    * Mark that an attempt was made on the current task.
    * @param task The current executing task.
+   * @param ctx: The current engine state to be passed to task functions.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   markAttempt(task: T, ctx: Context): void {
@@ -400,6 +421,8 @@ export abstract class ContextualEngine<
   /**
    * Check if the task has passed any of its internal limits.
    * @param task The task to check.
+   * @param postcondition The postcondition from the task guard.
+   * @param ctx: The current engine state to be passed to task functions.
    * @throws An error if any of the internal limits have been passed.
    */
   checkLimits(task: T, postcondition: (() => boolean) | undefined, ctx: Context): void {
