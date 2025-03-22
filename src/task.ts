@@ -21,6 +21,15 @@ export type AcquireItem<Context = void> = {
   get?: (ctx: Context) => void;
 };
 
+/**
+ * A single script step or action to take.
+ *
+ * Most scripts will not need to change the generic parameters from the default
+ * values; they are only needed for advanced use cases.
+ *
+ * @param A The set of combat placeholder actions.
+ * @param Context The type for global state passed from the engine (@see ContextualEngine).
+ */
 export type Task<A extends string = never, Context = void> = {
   name: string;
   after?: string[];
