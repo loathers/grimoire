@@ -88,18 +88,19 @@ export abstract class ContextualEngine<
   /**
    * Compute the current engine state, to be passed to task functions.
    *
-   * This will generally be called once per task execution.
+   * This will be called extremely often (once each for every time a method
+   * is called on a task), so the lifecycle of expensive computations (like
+   * visitUrl calls) should be handled carefully and separately.
    */
-  public abstract getContext(): Context;
+  public abstract getContext(task: T): Context;
 
   /**
    * Determine the next task to perform.
    * By default, this is the first task in the task list that is available.
-   * @param ctx: The current engine state to be passed to task functions.
    * @returns The next task to perform, or undefined if no tasks are available.
    */
-  public getNextTask(ctx: Context): T | undefined {
-    return this.tasks.find((task) => this.available(task, ctx));
+  public getNextTask(): T | undefined {
+    return this.tasks.find((task) => this.available(task));
   }
 
   /**
@@ -108,10 +109,9 @@ export abstract class ContextualEngine<
    */
   public run(actions?: number): void {
     for (let i = 0; i < (actions ?? Infinity); i++) {
-      const context = this.getContext();
-      const task = this.getNextTask(context);
+      const task = this.getNextTask();
       if (!task) return;
-      this.execute(task, context);
+      this.execute(task);
     }
   }
 
@@ -127,21 +127,20 @@ export abstract class ContextualEngine<
   /**
    * Check if the given task is available at this moment.
    * @param task: The task to check.
-   * @param ctx: The current engine state to be passed to task functions.
    * @returns true if all dependencies are complete and the task is ready.
    *  Note that dependencies are not checked transitively. That is, if
    *  A depends on B which depends on C, then A is ready if B is complete
    *  (regardless of if C is complete or not).
    */
-  public available(task: T, ctx: Context): boolean {
+  public available(task: T): boolean {
     if (task.limit?.skip !== undefined && this.attempts[task.name] >= task.limit.skip) return false;
     for (const after of task.after ?? []) {
       const after_task = this.tasks_by_name.get(after);
       if (after_task === undefined) throw `Unknown task dependency ${after} on ${task.name}`;
-      if (!after_task.completed(ctx)) return false;
+      if (!after_task.completed(this.getContext(task))) return false;
     }
-    if (task.ready && !task.ready(ctx)) return false;
-    if (task.completed(ctx)) return false;
+    if (task.ready && !task.ready(this.getContext(task))) return false;
+    if (task.completed(this.getContext(task))) return false;
     return true;
   }
 
@@ -149,52 +148,49 @@ export abstract class ContextualEngine<
    * Perform all steps to execute the provided task.
    * This is the main entry point for the Engine.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  public execute(task: T, ctx: Context): void {
-    this.printExecutingMessage(task, ctx);
+  public execute(task: T): void {
+    this.printExecutingMessage(task);
 
     // Determine the proper postcondition for after the task executes.
-    const postcondition = task.limit?.guard?.(ctx);
+    const postcondition = task.limit?.guard?.(this.getContext(task));
 
     // Acquire any items and effects first, possibly for later execution steps.
-    this.acquireItems(task, ctx);
-    this.acquireEffects(task, ctx);
+    this.acquireItems(task);
+    this.acquireEffects(task);
 
     // Prepare the outfit, with resources.
     const task_combat = task.combat?.clone() ?? new CombatStrategy<A, Context>();
-    const outfit = this.createOutfit(task, ctx);
+    const outfit = this.createOutfit(task);
 
     const task_resources = new CombatResources<A, Context>();
-    this.customize(task, outfit, task_combat, task_resources, ctx);
-    this.dress(task, outfit, ctx);
+    this.customize(task, outfit, task_combat, task_resources);
+    this.dress(task, outfit);
 
     // Prepare combat and choices
-    this.setCombat(task, task_combat, task_resources, ctx);
-    this.setChoices(task, this.propertyManager, ctx);
+    this.setCombat(task, task_combat, task_resources);
+    this.setChoices(task, this.propertyManager);
 
     // Actually perform the task
-    for (const resource of task_resources.all()) resource.prepare?.(ctx);
-    this.prepare(task, ctx);
-    this.do(task, ctx);
-    while (this.shouldRepeatAdv(task, ctx)) {
+    for (const resource of task_resources.all()) resource.prepare?.(this.getContext(task));
+    this.prepare(task);
+    this.do(task);
+    while (this.shouldRepeatAdv(task)) {
       set("lastEncounter", "");
-      this.do(task, ctx);
+      this.do(task);
     }
-    this.post(task, ctx);
+    this.post(task);
 
     // Mark that we tried the task, and apply limits
-    this.markAttempt(task, ctx);
-    this.checkLimits(task, postcondition, ctx);
+    this.markAttempt(task);
+    this.checkLimits(task, postcondition);
   }
 
   /**
    * Print a message to indicate the task has begun.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  printExecutingMessage(task: T, ctx: Context): void {
+  printExecutingMessage(task: T): void {
     print(``);
     print(`Executing ${task.name}`, "blue");
   }
@@ -202,10 +198,9 @@ export abstract class ContextualEngine<
   /**
    * Acquire all items for the task.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  acquireItems(task: T, ctx: Context): void {
-    const acquire = undelay(task.acquire, ctx);
+  acquireItems(task: T): void {
+    const acquire = undelay(task.acquire, this.getContext(task));
     for (const to_get of acquire || []) {
       const num_needed = to_get.num ?? 1;
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
@@ -229,10 +224,9 @@ export abstract class ContextualEngine<
   /**
    * Acquire all effects for the task.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  acquireEffects(task: T, ctx: Context): void {
-    const effects: Effect[] = undelay(task.effects, ctx) ?? [];
+  acquireEffects(task: T): void {
+    const effects: Effect[] = undelay(task.effects, this.getContext(task)) ?? [];
     const songs = effects.filter((effect) => isSong(effect));
     if (songs.length > maxSongs()) throw "Too many AT songs";
     const extraSongs = Object.keys(myEffects())
@@ -253,10 +247,9 @@ export abstract class ContextualEngine<
   /**
    * Create an outfit for the task with all required equipment.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  createOutfit(task: T, ctx: Context): Outfit {
-    const spec = undelay(task.outfit, ctx);
+  createOutfit(task: T): Outfit {
+    const spec = undelay(task.outfit, this.getContext(task));
     if (spec instanceof Outfit) return spec.clone();
 
     const outfit = new Outfit();
@@ -272,10 +265,8 @@ export abstract class ContextualEngine<
    * Equip the outfit for the task.
    * @param task The current executing task.
    * @param outfit The outfit for the task, possibly augmented by the engine.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  dress(task: T, outfit: Outfit, ctx: Context): void {
+  dress(task: T, outfit: Outfit): void {
     if (task.do instanceof Location) setLocation(task.do);
     outfit.dress();
   }
@@ -292,14 +283,12 @@ export abstract class ContextualEngine<
    * @param outfit The outfit for the task.
    * @param combat The combat strategy so far for the task.
    * @param resources The combat resources assigned so far for the task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
   customize(
     task: T,
     outfit: Outfit,
     combat: CombatStrategy<A, Context>,
     resources: CombatResources<A, Context>,
-    ctx: Context,
   ): void {
     // do nothing by default
   }
@@ -309,10 +298,9 @@ export abstract class ContextualEngine<
    * Set the choice settings for the task.
    * @param task The current executing task.
    * @param manager The property manager to use.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  setChoices(task: T, manager: PropertiesManager, ctx: Context): void {
-    for (const [key, value] of Object.entries(undelay(task.choices ?? {}, ctx))) {
+  setChoices(task: T, manager: PropertiesManager): void {
+    for (const [key, value] of Object.entries(undelay(task.choices ?? {}, this.getContext(task)))) {
       if (value === undefined) continue;
       manager.setChoice(parseInt(key), value);
     }
@@ -323,20 +311,18 @@ export abstract class ContextualEngine<
    * @param task The current executing task.
    * @param task_combat The completed combat strategy far for the task.
    * @param task_resources The combat resources assigned for the task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
   setCombat(
     task: T,
     task_combat: CombatStrategy<A, Context>,
     task_resources: CombatResources<A, Context>,
-    ctx: Context,
   ): void {
     // Save regular combat macro
     const macro = task_combat.compile(
       task_resources,
       this.options?.combat_defaults,
       task.do instanceof Location ? task.do : undefined,
-      ctx,
+      this.getContext(task),
     );
     macro.save();
     if (!this.options.ccs) {
@@ -355,7 +341,7 @@ export abstract class ContextualEngine<
     }
 
     // Save autoattack combat macro
-    const autoattack = task_combat.compileAutoattack(ctx);
+    const autoattack = task_combat.compileAutoattack(this.getContext(task));
     if (autoattack.toString().length > 1) {
       logprint(`Autoattack macro: ${autoattack.toString()}`);
       autoattack.setAutoAttack();
@@ -367,19 +353,17 @@ export abstract class ContextualEngine<
   /**
    * Do any task-specific preparation.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  prepare(task: T, ctx: Context): void {
-    task.prepare?.(ctx);
+  prepare(task: T): void {
+    task.prepare?.(this.getContext(task));
   }
 
   /**
    * Actually perform the task.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  do(task: T, ctx: Context): void {
-    const result = typeof task.do === "function" ? task.do(ctx) : task.do;
+  do(task: T): void {
+    const result = typeof task.do === "function" ? task.do(this.getContext(task)) : task.do;
     if (result instanceof Location) adv1(result, -1, "");
     runCombat();
     while (inMultiFight()) runCombat();
@@ -395,30 +379,25 @@ export abstract class ContextualEngine<
    *   3. Lil' Doctor™ bag noncombat, or
    *   4. Turtle taming noncombats.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    * @returns True if the task should be immediately repeated.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  shouldRepeatAdv(task: T, ctx: Context): boolean {
+  shouldRepeatAdv(task: T): boolean {
     return task.do instanceof Location && lastEncounterWasWanderingNC();
   }
 
   /**
    * Do any task-specific wrapup activities.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  post(task: T, ctx: Context): void {
-    task.post?.(ctx);
+  post(task: T): void {
+    task.post?.(this.getContext(task));
   }
 
   /**
    * Mark that an attempt was made on the current task.
    * @param task The current executing task.
-   * @param ctx: The current engine state to be passed to task functions.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  markAttempt(task: T, ctx: Context): void {
+  markAttempt(task: T): void {
     if (!(task.name in this.attempts)) this.attempts[task.name] = 0;
     this.attempts[task.name]++;
   }
@@ -427,20 +406,19 @@ export abstract class ContextualEngine<
    * Check if the task has passed any of its internal limits.
    * @param task The task to check.
    * @param postcondition The postcondition from the task guard.
-   * @param ctx: The current engine state to be passed to task functions.
    * @throws An error if any of the internal limits have been passed.
    */
-  checkLimits(task: T, postcondition: (() => boolean) | undefined, ctx: Context): void {
+  checkLimits(task: T, postcondition: (() => boolean) | undefined): void {
     if (!task.limit) return;
     const failureMessage = task.limit.message ? ` ${task.limit.message}` : "";
-    if (!task.completed(ctx)) {
+    if (!task.completed(this.getContext(task))) {
       if (task.limit.tries && this.attempts[task.name] >= task.limit.tries)
         throw `Task ${task.name} did not complete within ${task.limit.tries} attempts. Please check what went wrong.${failureMessage}`;
       if (task.limit.soft && this.attempts[task.name] >= task.limit.soft)
         throw `Task ${task.name} did not complete within ${task.limit.soft} attempts. Please check what went wrong (you may just be unlucky).${failureMessage}`;
       if (task.limit.turns && task.do instanceof Location && task.do.turnsSpent >= task.limit.turns)
         throw `Task ${task.name} did not complete within ${task.limit.turns} turns. Please check what went wrong.${failureMessage}`;
-      if (task.limit.unready && task.ready?.(ctx))
+      if (task.limit.unready && task.ready?.(this.getContext(task)))
         throw `Task ${task.name} is still ready, but it should not be. Please check what went wrong.${failureMessage}`;
       if (task.limit.completed)
         throw `Task ${task.name} is not completed, but it should be. Please check what went wrong.${failureMessage}`;
@@ -514,7 +492,8 @@ export class Engine<
   A extends string = never,
   T extends Task<A, void> = Task<A, void>,
 > extends ContextualEngine<A, void, T> {
-  public getContext(): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public override getContext(task: T): void {
     return;
   }
 }
