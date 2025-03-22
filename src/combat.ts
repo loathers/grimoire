@@ -6,7 +6,7 @@ import { Delayed, Macro, undelay } from "libram";
  * The function will be called after the outfit has been equipped,
  * but before any task-specific preparation.
  */
-export type DelayedMacro<Context> = Delayed<Macro, [Context]>;
+export type DelayedMacro<Context = void> = Delayed<Macro, [Context]>;
 
 /**
  * The strategy to use for combat for a task, which indicates what to do
