@@ -53,7 +53,7 @@ export type StrictCombatTask<
 > = Omit<Task<A, Context>, "do" | "combat" | "outfit"> &
   (
     | {
-        do: Delayed<Location> | ((context: Context) => void);
+        do: Delayed<Location, [Context]> | ((context: Context) => void);
         combat: C;
         outfit: Delayed<O>;
       }
