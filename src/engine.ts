@@ -85,6 +85,11 @@ export abstract class ContextualEngine<
     this.initPropertiesManager(this.propertyManager);
   }
 
+  /**
+   * Compute the current engine state, to be passed to task functions.
+   *
+   * This will generally be called once per task execution.
+   */
   public abstract getContext(): Context;
 
   /**
