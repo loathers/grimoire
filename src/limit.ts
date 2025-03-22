@@ -13,18 +13,18 @@ import { get } from "libram";
  *    returned inner function is run after the task executes.
  * @member message An extra message to include with the error.
  */
-export type Limit = {
+export type Limit<Context> = {
   tries?: number;
   turns?: number;
   soft?: number;
   skip?: number;
   unready?: boolean;
   completed?: boolean;
-  guard?: Guard;
+  guard?: Guard<Context>;
   message?: string;
 };
 
-export type Guard = () => () => boolean;
+export type Guard<Context> = (ctx: Context) => () => boolean;
 
 export class Guards {
   /**
@@ -33,7 +33,7 @@ export class Guards {
    * @param before
    * @param after
    */
-  static create<T>(before: () => T, after: (old: T) => boolean): Guard {
+  static create<T>(before: () => T, after: (old: T) => boolean): Guard<void> {
     return () => {
       const old = before();
       return () => after(old);
@@ -45,7 +45,7 @@ export class Guards {
    * @param condition A condition that should return true if the task
    *    sucessfully executed.
    */
-  static after(condition: () => boolean): Guard {
+  static after(condition: () => boolean): Guard<void> {
     return () => condition;
   }
 
@@ -53,7 +53,7 @@ export class Guards {
    * A guard that asserts the provided property changed.
    * @param property The property to check.
    */
-  static changed(property: string): Guard {
+  static changed(property: string): Guard<void> {
     return this.create<string>(
       () => get(property),
       (old: string) => get(property) !== old,

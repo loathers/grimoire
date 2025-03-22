@@ -42,7 +42,11 @@ import { Outfit } from "./outfit";
 import { ActionDefaults, CombatResources, CombatStrategy } from "./combat";
 
 type Optional<T> = { [x in keyof T]-?: undefined extends T[x] ? NonNullable<T[x]> : never };
-export class EngineOptions<A extends string = never, T extends Task<A> = Task<A>> {
+export class EngineOptions<
+  A extends string = never,
+  Context = void,
+  T extends Task<A, Context> = Task<A, Context>,
+> {
   combat_defaults?: ActionDefaults<A>;
   ccs?: string; // If given, use a custom ccs instead of the Grimoire auto-generated ccs
   allow_partial_outfits?: boolean; // If given, do not crash when a specified outfit cannot be fully equipped
@@ -51,7 +55,11 @@ export class EngineOptions<A extends string = never, T extends Task<A> = Task<A>
 
 const grimoireCCS = "grimoire_macro";
 
-export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
+export abstract class ContextualEngine<
+  A extends string = never,
+  Context = void,
+  T extends Task<A, Context> = Task<A, Context>,
+> {
   tasks: T[];
   options: EngineOptions<A, T>;
   attempts: { [task_name: string]: number } = {};
@@ -73,13 +81,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     this.initPropertiesManager(this.propertyManager);
   }
 
+  public abstract getContext(): Context;
+
   /**
    * Determine the next task to perform.
    * By default, this is the first task in the task list that is available.
    * @returns The next task to perform, or undefined if no tasks are available.
    */
-  public getNextTask(): T | undefined {
-    return this.tasks.find((task) => this.available(task));
+  public getNextTask(ctx: Context): T | undefined {
+    return this.tasks.find((task) => this.available(task, ctx));
   }
 
   /**
@@ -88,9 +98,10 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    */
   public run(actions?: number): void {
     for (let i = 0; i < (actions ?? Infinity); i++) {
-      const task = this.getNextTask();
+      const context = this.getContext();
+      const task = this.getNextTask(context);
       if (!task) return;
-      this.execute(task);
+      this.execute(task, context);
     }
   }
 
@@ -110,15 +121,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    *  A depends on B which depends on C, then A is ready if B is complete
    *  (regardless of if C is complete or not).
    */
-  public available(task: T): boolean {
+  public available(task: T, ctx: Context): boolean {
     if (task.limit?.skip !== undefined && this.attempts[task.name] >= task.limit.skip) return false;
     for (const after of task.after ?? []) {
       const after_task = this.tasks_by_name.get(after);
       if (after_task === undefined) throw `Unknown task dependency ${after} on ${task.name}`;
-      if (!after_task.completed()) return false;
+      if (!after_task.completed(ctx)) return false;
     }
-    if (task.ready && !task.ready()) return false;
-    if (task.completed()) return false;
+    if (task.ready && !task.ready(ctx)) return false;
+    if (task.completed(ctx)) return false;
     return true;
   }
 
@@ -127,48 +138,49 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * This is the main entry point for the Engine.
    * @param task The current executing task.
    */
-  public execute(task: T): void {
-    this.printExecutingMessage(task);
+  public execute(task: T, ctx: Context): void {
+    this.printExecutingMessage(task, ctx);
 
     // Determine the proper postcondition for after the task executes.
-    const postcondition = task.limit?.guard?.();
+    const postcondition = task.limit?.guard?.(ctx);
 
     // Acquire any items and effects first, possibly for later execution steps.
-    this.acquireItems(task);
-    this.acquireEffects(task);
+    this.acquireItems(task, ctx);
+    this.acquireEffects(task, ctx);
 
     // Prepare the outfit, with resources.
-    const task_combat = task.combat?.clone() ?? new CombatStrategy<A>();
-    const outfit = this.createOutfit(task);
+    const task_combat = task.combat?.clone() ?? new CombatStrategy<A, Context>();
+    const outfit = this.createOutfit(task, ctx);
 
-    const task_resources = new CombatResources<A>();
-    this.customize(task, outfit, task_combat, task_resources);
-    this.dress(task, outfit);
+    const task_resources = new CombatResources<A, Context>();
+    this.customize(task, outfit, task_combat, task_resources, ctx);
+    this.dress(task, outfit, ctx);
 
     // Prepare combat and choices
-    this.setCombat(task, task_combat, task_resources);
-    this.setChoices(task, this.propertyManager);
+    this.setCombat(task, task_combat, task_resources, ctx);
+    this.setChoices(task, this.propertyManager, ctx);
 
     // Actually perform the task
-    for (const resource of task_resources.all()) resource.prepare?.();
-    this.prepare(task);
-    this.do(task);
-    while (this.shouldRepeatAdv(task)) {
+    for (const resource of task_resources.all()) resource.prepare?.(ctx);
+    this.prepare(task, ctx);
+    this.do(task, ctx);
+    while (this.shouldRepeatAdv(task, ctx)) {
       set("lastEncounter", "");
-      this.do(task);
+      this.do(task, ctx);
     }
-    this.post(task);
+    this.post(task, ctx);
 
     // Mark that we tried the task, and apply limits
-    this.markAttempt(task);
-    this.checkLimits(task, postcondition);
+    this.markAttempt(task, ctx);
+    this.checkLimits(task, postcondition, ctx);
   }
 
   /**
    * Print a message to indicate the task has begun.
    * @param task The current executing task.
    */
-  printExecutingMessage(task: T): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  printExecutingMessage(task: T, ctx: Context): void {
     print(``);
     print(`Executing ${task.name}`, "blue");
   }
@@ -177,8 +189,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * Acquire all items for the task.
    * @param task The current executing task.
    */
-  acquireItems(task: T): void {
-    const acquire = undelay(task.acquire);
+  acquireItems(task: T, ctx: Context): void {
+    const acquire = undelay(task.acquire, ctx);
     for (const to_get of acquire || []) {
       const num_needed = to_get.num ?? 1;
       const num_have = itemAmount(to_get.item) + equippedAmount(to_get.item);
@@ -203,8 +215,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * Acquire all effects for the task.
    * @param task The current executing task.
    */
-  acquireEffects(task: T): void {
-    const effects: Effect[] = undelay(task.effects) ?? [];
+  acquireEffects(task: T, ctx: Context): void {
+    const effects: Effect[] = undelay(task.effects, ctx) ?? [];
     const songs = effects.filter((effect) => isSong(effect));
     if (songs.length > maxSongs()) throw "Too many AT songs";
     const extraSongs = Object.keys(myEffects())
@@ -226,8 +238,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * Create an outfit for the task with all required equipment.
    * @param task The current executing task.
    */
-  createOutfit(task: T): Outfit {
-    const spec = undelay(task.outfit);
+  createOutfit(task: T, ctx: Context): Outfit {
+    const spec = undelay(task.outfit, ctx);
     if (spec instanceof Outfit) return spec.clone();
 
     const outfit = new Outfit();
@@ -244,7 +256,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    * @param outfit The outfit for the task, possibly augmented by the engine.
    */
-  dress(task: T, outfit: Outfit): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  dress(task: T, outfit: Outfit, ctx: Context): void {
     if (task.do instanceof Location) setLocation(task.do);
     outfit.dress();
   }
@@ -265,8 +278,9 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
   customize(
     task: T,
     outfit: Outfit,
-    combat: CombatStrategy<A>,
-    resources: CombatResources<A>,
+    combat: CombatStrategy<A, Context>,
+    resources: CombatResources<A, Context>,
+    ctx: Context,
   ): void {
     // do nothing by default
   }
@@ -277,8 +291,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    * @param manager The property manager to use.
    */
-  setChoices(task: T, manager: PropertiesManager): void {
-    for (const [key, value] of Object.entries(undelay(task.choices ?? {}))) {
+  setChoices(task: T, manager: PropertiesManager, ctx: Context): void {
+    for (const [key, value] of Object.entries(undelay(task.choices ?? {}, ctx))) {
       if (value === undefined) continue;
       manager.setChoice(parseInt(key), value);
     }
@@ -290,12 +304,18 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task_combat The completed combat strategy far for the task.
    * @param task_resources The combat resources assigned for the task.
    */
-  setCombat(task: T, task_combat: CombatStrategy<A>, task_resources: CombatResources<A>): void {
+  setCombat(
+    task: T,
+    task_combat: CombatStrategy<A, Context>,
+    task_resources: CombatResources<A, Context>,
+    ctx: Context,
+  ): void {
     // Save regular combat macro
     const macro = task_combat.compile(
       task_resources,
       this.options?.combat_defaults,
       task.do instanceof Location ? task.do : undefined,
+      ctx,
     );
     macro.save();
     if (!this.options.ccs) {
@@ -314,7 +334,7 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
     }
 
     // Save autoattack combat macro
-    const autoattack = task_combat.compileAutoattack();
+    const autoattack = task_combat.compileAutoattack(ctx);
     if (autoattack.toString().length > 1) {
       logprint(`Autoattack macro: ${autoattack.toString()}`);
       autoattack.setAutoAttack();
@@ -327,16 +347,16 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * Do any task-specific preparation.
    * @param task The current executing task.
    */
-  prepare(task: T): void {
-    task.prepare?.();
+  prepare(task: T, ctx: Context): void {
+    task.prepare?.(ctx);
   }
 
   /**
    * Actually perform the task.
    * @param task The current executing task.
    */
-  do(task: T): void {
-    const result = typeof task.do === "function" ? task.do() : task.do;
+  do(task: T, ctx: Context): void {
+    const result = typeof task.do === "function" ? task.do(ctx) : task.do;
     if (result instanceof Location) adv1(result, -1, "");
     runCombat();
     while (inMultiFight()) runCombat();
@@ -354,7 +374,8 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The current executing task.
    * @returns True if the task should be immediately repeated.
    */
-  shouldRepeatAdv(task: T): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  shouldRepeatAdv(task: T, ctx: Context): boolean {
     return task.do instanceof Location && lastEncounterWasWanderingNC();
   }
 
@@ -362,15 +383,16 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * Do any task-specific wrapup activities.
    * @param task The current executing task.
    */
-  post(task: T): void {
-    task.post?.();
+  post(task: T, ctx: Context): void {
+    task.post?.(ctx);
   }
 
   /**
    * Mark that an attempt was made on the current task.
    * @param task The current executing task.
    */
-  markAttempt(task: T): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  markAttempt(task: T, ctx: Context): void {
     if (!(task.name in this.attempts)) this.attempts[task.name] = 0;
     this.attempts[task.name]++;
   }
@@ -380,17 +402,17 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
    * @param task The task to check.
    * @throws An error if any of the internal limits have been passed.
    */
-  checkLimits(task: T, postcondition: (() => boolean) | undefined): void {
+  checkLimits(task: T, postcondition: (() => boolean) | undefined, ctx: Context): void {
     if (!task.limit) return;
     const failureMessage = task.limit.message ? ` ${task.limit.message}` : "";
-    if (!task.completed()) {
+    if (!task.completed(ctx)) {
       if (task.limit.tries && this.attempts[task.name] >= task.limit.tries)
         throw `Task ${task.name} did not complete within ${task.limit.tries} attempts. Please check what went wrong.${failureMessage}`;
       if (task.limit.soft && this.attempts[task.name] >= task.limit.soft)
         throw `Task ${task.name} did not complete within ${task.limit.soft} attempts. Please check what went wrong (you may just be unlucky).${failureMessage}`;
       if (task.limit.turns && task.do instanceof Location && task.do.turnsSpent >= task.limit.turns)
         throw `Task ${task.name} did not complete within ${task.limit.turns} turns. Please check what went wrong.${failureMessage}`;
-      if (task.limit.unready && task.ready?.())
+      if (task.limit.unready && task.ready?.(ctx))
         throw `Task ${task.name} is still ready, but it should not be. Please check what went wrong.${failureMessage}`;
       if (task.limit.completed)
         throw `Task ${task.name} is not completed, but it should be. Please check what went wrong.${failureMessage}`;
@@ -457,6 +479,15 @@ export class Engine<A extends string = never, T extends Task<A> = Task<A>> {
       }
       manager.set({ customCombatScript: this.options.ccs ?? grimoireCCS });
     }
+  }
+}
+
+export class Engine<
+  A extends string = never,
+  T extends Task<A, void> = Task<A, void>,
+> extends ContextualEngine<A, void, T> {
+  public getContext(): void {
+    return;
   }
 }
 

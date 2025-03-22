@@ -6,7 +6,7 @@ import { Delayed, Macro, undelay } from "libram";
  * The function will be called after the outfit has been equipped,
  * but before any task-specific preparation.
  */
-export type DelayedMacro = Delayed<Macro>;
+export type DelayedMacro<Context> = Delayed<Macro, [Context]>;
 
 /**
  * The strategy to use for combat for a task, which indicates what to do
@@ -45,12 +45,12 @@ export type DelayedMacro = Delayed<Macro>;
  * 1. The monster-specific macro(s) from .autoattack().
  * 2. The general macro(s) from .autoattack().
  */
-export class CombatStrategy<A extends string = never> {
-  private starting_macro?: DelayedMacro[];
-  private default_macro?: DelayedMacro[];
-  private macros: Map<Monster, DelayedMacro[]> = new Map();
-  private default_autoattack?: DelayedMacro[];
-  private autoattacks: Map<Monster, DelayedMacro[]> = new Map();
+export class CombatStrategy<A extends string = never, Context = void> {
+  private starting_macro?: DelayedMacro<Context>[];
+  private default_macro?: DelayedMacro<Context>[];
+  private macros: Map<Monster, DelayedMacro<Context>[]> = new Map();
+  private default_autoattack?: DelayedMacro<Context>[];
+  private autoattacks: Map<Monster, DelayedMacro<Context>[]> = new Map();
   private default_action?: A;
   private actions: Map<Monster, A> = new Map();
   private ccs_entries: Map<Monster, string[]> = new Map();
@@ -66,7 +66,11 @@ export class CombatStrategy<A extends string = never> {
    *    the same monster. If false, add after all previous macros.
    * @returns this
    */
-  public macro(macro: DelayedMacro, monsters?: Monster[] | Monster, prepend?: boolean): this {
+  public macro(
+    macro: DelayedMacro<Context>,
+    monsters?: Monster[] | Monster,
+    prepend?: boolean,
+  ): this {
     if (monsters === undefined) {
       if (this.default_macro === undefined) this.default_macro = [];
       if (prepend) this.default_macro.unshift(macro);
@@ -93,7 +97,11 @@ export class CombatStrategy<A extends string = never> {
    *    macros for the same monster. If false, add after all previous macros.
    * @returns this
    */
-  public autoattack(macro: DelayedMacro, monsters?: Monster[] | Monster, prepend?: boolean): this {
+  public autoattack(
+    macro: DelayedMacro<Context>,
+    monsters?: Monster[] | Monster,
+    prepend?: boolean,
+  ): this {
     if (monsters === undefined) {
       if (this.default_autoattack === undefined) this.default_autoattack = [];
       if (prepend) this.default_autoattack.unshift(macro);
@@ -116,7 +124,7 @@ export class CombatStrategy<A extends string = never> {
    *    macros. If false, add after all previous starting macros.
    * @returns this
    */
-  public startingMacro(macro: DelayedMacro, prepend?: boolean): this {
+  public startingMacro(macro: DelayedMacro<Context>, prepend?: boolean): this {
     if (this.starting_macro === undefined) this.starting_macro = [];
     if (prepend) this.starting_macro.unshift(macro);
     else this.starting_macro.push(macro);
@@ -201,8 +209,8 @@ export class CombatStrategy<A extends string = never> {
   /**
    * Perform a deep copy of this combat strategy.
    */
-  public clone(): CombatStrategy<A> {
-    const result = new CombatStrategy<A>();
+  public clone(): CombatStrategy<A, Context> {
+    const result = new CombatStrategy<A, Context>();
     if (this.starting_macro) result.starting_macro = [...this.starting_macro];
     if (this.default_macro) result.default_macro = [...this.default_macro];
     for (const pair of this.macros) result.macros.set(pair[0], [...pair[1]]);
@@ -223,31 +231,32 @@ export class CombatStrategy<A extends string = never> {
    * @returns The compiled macro.
    */
   public compile(
-    resources: CombatResources<A>,
+    resources: CombatResources<A, Context>,
     defaults: ActionDefaults<A> | undefined,
     location: Location | undefined,
+    ctx: Context,
   ): Macro {
     const result = new Macro();
 
     // If there is macro precursor, do it now
     if (this.starting_macro) {
-      result.step(...this.starting_macro.map((macro) => undelay(macro)));
+      result.step(...this.starting_macro.map((macro) => undelay(macro, ctx)));
     }
 
     // Perform any monster-specific macros (these may or may not end the fight)
     const monster_macros = new CompressedMacro();
     this.macros.forEach((value, key) => {
-      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro))));
+      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro, ctx))));
     });
     result.step(monster_macros.compile());
 
     // Perform the non-monster specific macro
-    if (this.default_macro) result.step(...this.default_macro.map((macro) => undelay(macro)));
+    if (this.default_macro) result.step(...this.default_macro.map((macro) => undelay(macro, ctx)));
 
     // Perform any monster-specific actions (these should end the fight)
     const monster_actions = new CompressedMacro();
     this.actions.forEach((action, key) => {
-      const macro = resources.getMacro(action) ?? defaults?.[action]?.(key);
+      const macro = resources.getMacro(action, ctx) ?? defaults?.[action]?.(key);
       if (macro) monster_actions.add(key, new Macro().step(macro));
     });
     result.step(monster_actions.compile());
@@ -255,7 +264,7 @@ export class CombatStrategy<A extends string = never> {
     // Perform the non-monster specific action (these should end the fight)
     if (this.default_action) {
       const macro =
-        resources.getMacro(this.default_action) ?? defaults?.[this.default_action]?.(location);
+        resources.getMacro(this.default_action, ctx) ?? defaults?.[this.default_action]?.(location);
       if (macro) result.step(macro);
     }
     return result;
@@ -266,19 +275,19 @@ export class CombatStrategy<A extends string = never> {
    *
    * @returns The compiled autoattack macro.
    */
-  public compileAutoattack(): Macro {
+  public compileAutoattack(ctx: Context): Macro {
     const result = new Macro();
 
     // Perform any monster-specific autoattacks (these may or may not end the fight)
     const monster_macros = new CompressedMacro();
     this.autoattacks.forEach((value, key) => {
-      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro))));
+      monster_macros.add(key, new Macro().step(...value.map((macro) => undelay(macro, ctx))));
     });
     result.step(monster_macros.compile());
 
     // Perform the non-monster specific macro
     if (this.default_autoattack)
-      result.step(...this.default_autoattack.map((macro) => undelay(macro)));
+      result.step(...this.default_autoattack.map((macro) => undelay(macro, ctx)));
 
     return result;
   }
@@ -375,22 +384,22 @@ class CompressedMacro {
 /**
  * An interface specifying a resource to be used for fulfilling an action.
  */
-export interface CombatResource {
-  prepare?: () => void;
-  do: Item | Skill | DelayedMacro;
+export interface CombatResource<Context = void> {
+  prepare?: (ctx: Context) => void;
+  do: Item | Skill | DelayedMacro<Context>;
 }
 
 /**
  * A class for providing resources to fulfil combat actions.
  */
-export class CombatResources<A extends string> {
-  private resources = new Map<A, CombatResource>();
+export class CombatResources<A extends string, Context = void> {
+  private resources = new Map<A, CombatResource<Context>>();
 
   /**
    * Use the provided resource to fulfil the provided action.
    * (If the resource is undefined, this does nothing).
    */
-  public provide(action: A, resource: CombatResource | undefined): void {
+  public provide(action: A, resource: CombatResource<Context> | undefined): void {
     if (resource === undefined) return;
     this.resources.set(action, resource);
   }
@@ -405,7 +414,7 @@ export class CombatResources<A extends string> {
   /**
    * Return all provided combat resources.
    */
-  public all(): CombatResource[] {
+  public all(): CombatResource<Context>[] {
     return Array.from(this.resources.values());
   }
 
@@ -413,11 +422,11 @@ export class CombatResources<A extends string> {
    * Get the macro provided by the resource for this action, or undefined if
    * no resource was provided.
    */
-  public getMacro(action: A): Macro | undefined {
+  public getMacro(action: A, ctx: Context): Macro | undefined {
     const resource = this.resources.get(action);
     if (resource === undefined) return undefined;
     if (resource.do instanceof Item) return new Macro().item(resource.do);
     if (resource.do instanceof Skill) return new Macro().skill(resource.do);
-    return undelay(resource.do);
+    return undelay(resource.do, ctx);
   }
 }
