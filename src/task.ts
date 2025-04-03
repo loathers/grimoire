@@ -5,58 +5,68 @@ import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
 import { Outfit, OutfitSpec } from "./outfit";
 
-export type Quest<T> = {
+export type Quest<T, Context = void> = {
   name: string;
-  completed?: () => boolean;
-  ready?: () => boolean;
+  completed?: (ctx: Context) => boolean;
+  ready?: (ctx: Context) => boolean;
   tasks: T[];
 };
 
-export type AcquireItem = {
+export type AcquireItem<Context = void> = {
   item: Item;
   num?: number;
   price?: number;
-  useful?: () => boolean;
+  useful?: (ctx: Context) => boolean;
   optional?: boolean;
-  get?: () => void;
+  get?: (ctx: Context) => void;
 };
 
-export type Task<A extends string = never> = {
+/**
+ * A single script step or action to take.
+ *
+ * Most scripts will not need to change the generic parameters from the default
+ * values; they are only needed for advanced use cases.
+ *
+ * @param A The set of combat placeholder actions.
+ * @param Context The type for global state passed from the engine (@see ContextualEngine).
+ */
+export type Task<A extends string = never, Context = void> = {
   name: string;
   after?: string[];
 
-  ready?: () => boolean;
-  completed: () => boolean;
+  ready?: (ctx: Context) => boolean;
+  completed: (ctx: Context) => boolean;
 
   // How to perform the task
   // Executed as:
   //  1. prepare();
   //  2. adv1(do) OR do();
   //  3. post();
-  prepare?: () => void;
-  do: Location | (() => Location) | (() => void);
-  post?: () => void;
+  prepare?: (ctx: Context) => void;
+  do: Location | ((ctx: Context) => Location) | ((context: Context) => void);
+  post?: (ctx: Context) => void;
 
-  acquire?: Delayed<AcquireItem[]>;
-  effects?: Delayed<Effect[]>;
-  choices?: Delayed<{ [id: number]: number | string }>;
-  limit?: Limit;
-  outfit?: Delayed<OutfitSpec | Outfit>;
-  combat?: CombatStrategy<A>;
+  acquire?: Delayed<AcquireItem[], [Context]>;
+  effects?: Delayed<Effect[], [Context]>;
+  choices?: Delayed<{ [id: number]: number | string }, [Context]>;
+  limit?: Limit<Context>;
+  outfit?: Delayed<OutfitSpec | Outfit, [Context]>;
+  combat?: CombatStrategy<A, Context>;
 };
 
 export type StrictCombatTask<
   A extends string = never,
   C extends CombatStrategy<A> = CombatStrategy<A>,
   O extends OutfitSpec | Outfit = OutfitSpec | Outfit,
-> = Omit<Task, "do" | "combat" | "outfit"> &
+  Context = void,
+> = Omit<Task<A, Context>, "do" | "combat" | "outfit"> &
   (
     | {
-        do: Delayed<Location> | (() => void);
+        do: Delayed<Location, [Context]> | ((context: Context) => void);
         combat: C;
         outfit: Delayed<O>;
       }
-    | { do: () => void; outfit?: Delayed<O> }
+    | { do: () => void; outfit?: Delayed<O, [Context]> }
   );
 
 /**
