@@ -18,6 +18,7 @@ import {
   Slot,
   toSlot,
   useFamiliar,
+  weaponType,
 } from "kolmafia";
 import {
   $familiar,
@@ -25,6 +26,7 @@ import {
   $skill,
   $slot,
   $slots,
+  $stat,
   applyModes,
   get,
   have,
@@ -221,6 +223,20 @@ export class Outfit {
     if (!have($skill`Double-Fisted Skull Smashing`)) return false;
     if (weaponHands(item) !== 1) return false;
     if (!canEquip(item)) return false;
+    if (this.equips.has($slot`weapon`)) {
+      const weaponStat = weaponType(this.equips.get($slot`weapon`) ?? $item`none`);
+      const offhandStat = weaponType(item);
+      if (
+        weaponStat === $stat`Moxie` &&
+        (offhandStat === $stat`Mysticality` || offhandStat === $stat`Muscle`)
+      )
+        return false;
+      if (
+        offhandStat === $stat`Moxie` &&
+        (weaponStat === $stat`Mysticality` || weaponStat === $stat`Muscle`)
+      )
+        return false;
+    }
     this.equips.set($slot`off-hand`, item);
     return true;
   }
