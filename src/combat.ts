@@ -414,6 +414,13 @@ export class CombatResources<A extends string, Context = void> {
   }
 
   /**
+   * Returns the resource for the provided action, if set.
+   */
+  public get(action: A): CombatResource<Context> | undefined {
+    return this.resources.get(action);
+  }
+
+  /**
    * Return all provided combat resources.
    */
   public all(): CombatResource<Context>[] {
