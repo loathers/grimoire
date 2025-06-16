@@ -191,6 +191,10 @@ export class Outfit {
         break;
       case $slot`familiar`:
         if (this.familiar !== undefined && !canEquip(this.familiar, item)) return false;
+        break;
+      case $slot`weapon`:
+        if (!weaponsCompatible(item, this.equips.get($slot`off-hand`))) return false;
+        break;
     }
     if (toSlot(item) !== $slot`familiar` && !canEquip(item)) return false;
     this.equips.set(toSlot(item), item);
@@ -223,20 +227,7 @@ export class Outfit {
     if (!have($skill`Double-Fisted Skull Smashing`)) return false;
     if (weaponHands(item) !== 1) return false;
     if (!canEquip(item)) return false;
-    if (this.equips.has($slot`weapon`)) {
-      const weaponStat = weaponType(this.equips.get($slot`weapon`) ?? $item`none`);
-      const offhandStat = weaponType(item);
-      if (
-        weaponStat === $stat`Moxie` &&
-        (offhandStat === $stat`Mysticality` || offhandStat === $stat`Muscle`)
-      )
-        return false;
-      if (
-        offhandStat === $stat`Moxie` &&
-        (weaponStat === $stat`Mysticality` || weaponStat === $stat`Muscle`)
-      )
-        return false;
-    }
+    if (!weaponsCompatible(this.equips.get($slot`weapon`), item)) return false;
     this.equips.set($slot`off-hand`, item);
     return true;
   }
@@ -660,18 +651,25 @@ export class Outfit {
       usedSlots.add($slot`crown-of-thrones`);
     }
 
-    // We must manually remove equipment that we want to use in a different
-    // slot than where it is currently equipped, to avoid a mafia issue.
+    // Then, we remove existing equipment only when it would block the new outfit:
+    // 1. An existing 2-handed weapon would block offhands
+    if (
+      weaponHands(equippedItem($slot`weapon`)) !== 1 &&
+      this.equips.has($slot`offhand`) &&
+      !this.equips.has($slot`weapon`)
+    )
+      equip($slot`weapon`, $item.none);
+    // 2. An existing dual-fisted ranged weapon would block melee weapons.
+    if (!weaponsCompatible(this.equips.get($slot`weapon`), equippedItem($slot`off-hand`)))
+      equip($slot`off-hand`, $item.none);
+    // 3. Equipment that will be used in a different slot than
+    // where it is currently equipped, to avoid a mafia issue.
     // Order is anchored here to prevent DFSS shenanigans
     for (const slot of nonaccessorySlots) {
       if (
         (targetEquipment.includes(equippedItem(slot)) &&
           this.equips.get(slot) !== equippedItem(slot)) ||
-        this.avoid.includes(equippedItem(slot)) ||
-        (slot === $slot`weapon` &&
-          weaponHands(equippedItem(slot)) !== 1 &&
-          this.equips.has($slot`offhand`) &&
-          !this.equips.has($slot`weapon`))
+        this.avoid.includes(equippedItem(slot))
       )
         equip(slot, $item.none);
     }
@@ -914,4 +912,27 @@ export function getCurrentModes(): Modes & Record<keyof Modes, unknown> {
 function getMode<T extends string>(property: string, options: readonly T[]): T | undefined {
   const val = get(property, "");
   return options.find((s) => s === val); // .includes has type issues
+}
+
+/**
+ * Returns true if the provided weapons are compatible for dual-wielding.
+ * (Ranged weapons cannot be equipped alongside melee/myst weapons).
+ */
+function weaponsCompatible(weapon: Item | undefined, offhand: Item | undefined): boolean {
+  if (!weapon || weapon === $item`none`) return true;
+  if (!offhand || offhand === $item`none`) return true;
+  if (toSlot(offhand) !== $slot`weapon`) return true;
+  const weaponStat = weaponType(weapon);
+  const offhandStat = weaponType(offhand);
+  if (
+    weaponStat === $stat`Moxie` &&
+    (offhandStat === $stat`Mysticality` || offhandStat === $stat`Muscle`)
+  )
+    return false;
+  if (
+    offhandStat === $stat`Moxie` &&
+    (weaponStat === $stat`Mysticality` || weaponStat === $stat`Muscle`)
+  )
+    return false;
+  return true;
 }
