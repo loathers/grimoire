@@ -238,6 +238,10 @@ export class Outfit {
         return $familiar`Disembodied Hand`;
       case $slot`off-hand`:
         return $familiar`Left-Hand Man`;
+      case $slot`pants`:
+        return $familiar`Fancypants Scarecrow`;
+      case $slot`hat`:
+        return $familiar`Mad Hatrack`;
       default:
         return undefined;
     }
