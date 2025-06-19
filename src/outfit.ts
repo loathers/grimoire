@@ -326,10 +326,15 @@ export class Outfit {
     if (![undefined, $slot`familiar`].includes(slot)) return false;
     if (this.equips.has($slot`familiar`)) return false;
     if (booleanModifier(item, "Single Equip")) return false;
-    // Hats/pants don't get the full effect on the familiar, unlike weapons/off-hands which are basically all fully functional
-    if (!$slots`hat, pants`.includes(toSlot(item)) && slot === undefined) return false;
     const familiar = this.getHoldingFamiliar(item);
-    if (familiar === undefined || !this.equip(familiar)) return false;
+    // Hats/pants don't get the full effect on the familiar, unlike weapons/off-hands which are basically all fully functional
+    if (
+      familiar === undefined ||
+      (!$familiars`Fancypants Scarecrow, Mad Hatrack`.includes(familiar) && slot === undefined)
+    ) {
+      return false;
+    }
+    if (!this.equip(familiar)) return false;
     this.equips.set($slot`familiar`, item);
     return true;
   }
