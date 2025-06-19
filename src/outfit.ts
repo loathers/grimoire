@@ -22,6 +22,7 @@ import {
 } from "kolmafia";
 import {
   $familiar,
+  $familiars,
   $item,
   $skill,
   $slot,
@@ -238,6 +239,10 @@ export class Outfit {
         return $familiar`Disembodied Hand`;
       case $slot`off-hand`:
         return $familiar`Left-Hand Man`;
+      case $slot`pants`:
+        return $familiar`Fancypants Scarecrow`;
+      case $slot`hat`:
+        return $familiar`Mad Hatrack`;
       default:
         return undefined;
     }
@@ -322,7 +327,14 @@ export class Outfit {
     if (this.equips.has($slot`familiar`)) return false;
     if (booleanModifier(item, "Single Equip")) return false;
     const familiar = this.getHoldingFamiliar(item);
-    if (familiar === undefined || !this.equip(familiar)) return false;
+    // Hats/pants don't get the full effect on the familiar, unlike weapons/off-hands which are basically all fully functional
+    if (
+      familiar === undefined ||
+      (!$familiars`Fancypants Scarecrow, Mad Hatrack`.includes(familiar) && slot === undefined)
+    ) {
+      return false;
+    }
+    if (!this.equip(familiar)) return false;
     this.equips.set($slot`familiar`, item);
     return true;
   }
