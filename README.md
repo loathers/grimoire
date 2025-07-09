@@ -44,8 +44,7 @@ Because of the way tasks need to be written, each task can take more lines to wr
 #### Ascension automation
 
 - [phccs](https://github.com/horrible-little-slime/phccs), [loop-cs](https://github.com/MrFizzyBubbs/loop-cs): for Community Service runs.
-- [loop-gyou](https://github.com/Kasekopf/loop-casual/tree/gyou): for Grey You softcore runs.
-- [loop-casual](https://github.com/Kasekopf/loop-casual): for Casual runs.
+- [loopstar](https://github.com/Kasekopf/loopstar): for Casual, Grey You, and Shrunken Adventurer softcore runs.
 
 #### Farming scripts
 
