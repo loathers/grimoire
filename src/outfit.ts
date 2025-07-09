@@ -330,7 +330,7 @@ export class Outfit {
     // Hats/pants don't get the full effect on the familiar, unlike weapons/off-hands which are basically all fully functional
     if (
       familiar === undefined ||
-      (!$familiars`Fancypants Scarecrow, Mad Hatrack`.includes(familiar) && slot === undefined)
+      ($familiars`Fancypants Scarecrow, Mad Hatrack`.includes(familiar) && slot === undefined)
     ) {
       return false;
     }
