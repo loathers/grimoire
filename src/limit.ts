@@ -13,7 +13,7 @@ import { get } from "libram";
  *    returned inner function is run after the task executes.
  * @member message An extra message to include with the error.
  */
-export type Limit<Context> = {
+export type Limit<Context = void> = {
   tries?: number;
   turns?: number;
   soft?: number;
@@ -24,7 +24,7 @@ export type Limit<Context> = {
   message?: string;
 };
 
-export type Guard<Context> = (ctx: Context) => () => boolean;
+export type Guard<Context = void> = (ctx: Context) => () => boolean;
 
 export class Guards {
   /**
