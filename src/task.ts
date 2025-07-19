@@ -56,15 +56,15 @@ export type Task<A extends string = never, Context = void> = {
 
 export type StrictCombatTask<
   A extends string = never,
-  C extends CombatStrategy<A> = CombatStrategy<A>,
-  O extends OutfitSpec | Outfit = OutfitSpec | Outfit,
   Context = void,
+  C extends CombatStrategy<A, Context> = CombatStrategy<A, Context>,
+  O extends OutfitSpec | Outfit = OutfitSpec | Outfit,
 > = Omit<Task<A, Context>, "do" | "combat" | "outfit"> &
   (
     | {
         do: Delayed<Location, [Context]> | ((context: Context) => void);
         combat: C;
-        outfit: Delayed<O>;
+        outfit: Delayed<O, [Context]>;
       }
     | { do: () => void; outfit?: Delayed<O, [Context]> }
   );
