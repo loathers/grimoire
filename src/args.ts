@@ -17,6 +17,7 @@ import {
 /**
  * Specification for an argument that takes values in T.
  * @member key The key to use when parsing this argument.
+ * @member aliases Optional aliases for this argument.
  * @member help Description for the help text.
  * @member options An array of allowable values for this argument.
  *    Each entry has an optional description for the help text as well.
@@ -32,6 +33,7 @@ import {
  */
 interface ArgSpec<T> {
   key?: Exclude<string, "help">;
+  aliases?: string[];
   help?: string;
   options?: [T, string?][];
   setting?: string;
@@ -66,6 +68,7 @@ type ArraySpecNoDefault<T> = Omit<ArraySpec<T>, "default">;
 interface ArgOptions {
   defaultGroupName?: string; // Name to use in help text for the top-level group; defaults to "Options".
   positionalArgs?: string[]; // Key names of args that can be passed positionally, without the key being provided at runtime. (Not recommended, but provided for backwards compatability).
+  caseSensitive?: boolean; // If property names are case sensitive, defaults to false
 }
 
 export class Args {
@@ -520,13 +523,35 @@ export class Args {
     const metadata = Args.getMetadata(args);
 
     // Load the list of keys and flags from the arg spec
-    const keys = new Set<string>();
-    const flags = new Set<string>();
+    // Map lowercase names for case-insensitive and alias matching
+    const keys = new Map<string, string>();
+    const flags = new Map<string, string>();
+    const aliased = new Map<string, string>();
     metadata.traverse((keySpec, key) => {
       const name = keySpec.key ?? key;
-      if (flags.has(name) || keys.has(name)) throw `Duplicate arg key ${name} is not allowed`;
-      if (keySpec.valueHelpName === "FLAG") flags.add(name);
-      else keys.add(name);
+      const namesToMap = [name, ...(keySpec.aliases ?? [])];
+
+      for (const n of namesToMap) {
+        const lower = metadata.options?.caseSensitive ? n : n.toLowerCase();
+
+        if (flags.has(lower) || keys.has(lower)) {
+          // Duplicate arg key 'X' is not allowed
+          // Duplicate arg key 'X' is already aliased to 'Y'
+          // Duplicate arg key 'X' (alias for 'Y') is not allowed
+          // Duplicate arg key 'X' (alias for 'Y') is already aliased to 'Y'
+          throw `Duplicate arg key '${n}' ${n !== name ? `(alias for '${name}') ` : ""}is ${aliased.has(lower) ? `already aliased to '${aliased.get(lower)}'` : "not allowed"}`;
+        }
+
+        if (n !== name) {
+          aliased.set(lower, name);
+        }
+
+        if (keySpec.valueHelpName === "FLAG") {
+          flags.set(lower, name);
+        } else {
+          keys.set(lower, name);
+        }
+      }
     });
 
     // Parse values from settings.
@@ -547,6 +572,7 @@ export class Args {
       keys,
       flags,
       metadata.options.positionalArgs ?? [],
+      metadata.options.caseSensitive ?? false
     ).parse();
     metadata.traverseAndMaybeSet(args, (keySpec, key) => {
       const argKey = keySpec.key ?? key;
@@ -610,9 +636,10 @@ export class Args {
             : `<font color='#888888'>[setting: ${
                 arg.setting ?? `${metadata.scriptName}_${arg.key ?? key}`
               }]</font>`;
+        const aliasesText = arg.aliases && arg.aliases.length > 0 ? `<font color='#888888'>[aliases: ${arg.aliases.join(", ")}]</font>` : "";
 
         printHtml(
-          `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText].join(" ")}`,
+          `&nbsp;&nbsp;${[nameText, valueText, "-", helpText, defaultText, settingText, aliasesText].filter(Boolean).join(" ")}`,
         );
         const valueOptions = arg.options ?? [];
         if (valueOptions.length < (maxOptionsToDisplay ?? Number.MAX_VALUE)) {
@@ -888,22 +915,24 @@ function traverse<T extends ArgMap>(
  */
 class CommandParser {
   private command: string;
-  private keys: Set<string>;
-  private flags: Set<string>;
+  private keys: Map<string, string>;
+  private flags: Map<string, string>;
   private positionalArgs: string[];
 
   private positionalArgsParsed: number;
   private index: number;
 
   private prevUnquotedKey: string | undefined;
+  private caseSensitive: boolean;
 
-  constructor(command: string, keys: Set<string>, flags: Set<string>, positionalArgs: string[]) {
+  constructor(command: string, keys: Map<string, string>, flags: Map<string, string>, positionalArgs: string[], caseSensitive: boolean) {
     this.command = command;
     this.index = 0;
     this.keys = keys;
     this.flags = flags;
     this.positionalArgs = positionalArgs;
     this.positionalArgsParsed = 0;
+    this.caseSensitive = caseSensitive;
   }
 
   /**
@@ -916,31 +945,39 @@ class CommandParser {
     while (!this.finished()) {
       // A flag F may appear as !F to be parsed as false.
       let parsing_negative_flag = false;
-      if (this.peek() === "!") {
+      if (this.peek() === "!" || this.peek() === "-") {
         parsing_negative_flag = true;
-        this.consume(["!"]);
+        this.consume([this.peek()]);
       }
 
       const startIndex = this.index;
       const key = this.parseKey();
-      if (result.has(key)) {
-        throw `Duplicate key ${key} (first set to ${result.get(key) ?? ""})`;
+      const lowerKey = this.caseSensitive ? key : key.toLowerCase();
+
+      const resolvedKey =
+        this.flags.get(lowerKey) ??
+        this.keys.get(lowerKey) ??
+        lowerKey;
+
+      if (result.has(resolvedKey)) {
+        throw `Duplicate key ${key} (first set to ${result.get(resolvedKey) ?? ""})`;
       }
-      if (this.flags.has(key)) {
+
+      if (this.flags.has(lowerKey)) {
         // The key corresponds to a flag.
         // Parse [key] as true and ![key] as false.
-        result.set(key, parsing_negative_flag ? "false" : "true");
+        result.set(resolvedKey, parsing_negative_flag ? "false" : "true");
         if (this.peek() === "=") throw `Flag ${key} cannot be assigned a value`;
         if (!this.finished()) this.consume([" "]);
         this.prevUnquotedKey = undefined;
-      } else if (this.keys.has(key)) {
+      } else if (this.keys.has(lowerKey)) {
         // Parse [key]=[value] or [key] [value]
         this.consume(["=", " "]);
         const value = this.parseValue();
         if (["'", '"'].includes(this.prev() ?? "")) this.prevUnquotedKey = undefined;
-        else this.prevUnquotedKey = key;
+        else this.prevUnquotedKey = resolvedKey;
         if (!this.finished()) this.consume([" "]);
-        result.set(key, value);
+        result.set(resolvedKey, value);
       } else if (this.positionalArgsParsed < this.positionalArgs.length && this.peek() !== "=") {
         // Parse [value] as the next positional arg
         const positionalKey = this.positionalArgs[this.positionalArgsParsed];
@@ -1041,25 +1078,61 @@ class CommandParser {
    *    '[^']*"
    *    [^'"][^ ]*
    *
+   *
+   * Quotes only define a quoted value if it appears at the start.
+   * A closing quote is valid only when followed by space or nothing.
+   * Backslashes when in a quote, escapes the next character
+   *
    * @returns The next value.
    */
   private parseValue(): string {
-    let valueEnder = " ";
-    const quotes = ["'", '"'];
-    if (quotes.includes(this.peek() ?? "")) {
-      valueEnder = this.peek() ?? ""; // The value is everything until the next quote
-      this.consume([valueEnder]); // Consume opening quote
+    const ch = this.peek();
+
+    if (ch === '"' || ch === "'") {
+      return this.parseQuotedValue(ch);
     }
 
-    const valueEnd = this.findNext([valueEnder]);
-    const value = this.command.substring(this.index, valueEnd);
-    if (valueEnder !== " " && valueEnd === this.command.length) {
-      throw `No closing ${valueEnder} found for ${valueEnder}${value}`;
+    const first = this.index;
+    this.index = this.findNext([" "]);
+
+    return this.command.substring(first, this.index);
+  }
+
+  private parseQuotedValue(quote: '"' | "'"): string {
+    this.index++; // consume opening quote
+
+    let out = "";
+
+    while (!this.finished()) {
+      const ch = this.peek()!;
+
+      // Backslash always consumes itself and directly writes the next char
+      if (ch === "\\") {
+        this.index++;
+
+        if (this.finished()) {
+          out += "\\";
+          break;
+        }
+
+        out += this.peek();
+        this.index++;
+        continue;
+      } else if (ch === quote) {
+        const next = this.command.charAt(this.index + 1);
+
+        // Closing quote only matters before space/EOL
+        if (next === "" || next === " ") {
+          this.index++;
+
+          return out;
+        }
+      }
+
+      out += ch;
+      this.index++;
     }
 
-    // Consume the value (and closing quote)
-    this.index = valueEnd;
-    if (valueEnder !== " ") this.consume([valueEnder]);
-    return value;
+    throw `No closing ${quote} found for ${quote}${out}`;
   }
 }
