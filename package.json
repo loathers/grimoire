@@ -43,7 +43,7 @@
   },
   "peerDependencies": {
     "kolmafia": "^5.28100.0",
-    "libram": "^0.10.0"
+    "libram": "0.10 - 0.11"
   },
   "author": "LASS",
   "license": "ISC",

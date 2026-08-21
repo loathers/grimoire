@@ -3372,7 +3372,7 @@ __metadata:
     webpack-cli: "npm:^4.8.0"
   peerDependencies:
     kolmafia: ^5.28100.0
-    libram: ^0.10.0
+    libram: 0.10 - 0.11
   languageName: unknown
   linkType: soft
 
