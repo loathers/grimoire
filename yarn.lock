@@ -3372,7 +3372,7 @@ __metadata:
     eslint-config-prettier: "npm:^8.3.0"
     eslint-plugin-libram: "npm:^0.4.22"
     kolmafia: "npm:^5.29200.0"
-    libram: "npm:^0.11.28"
+    libram: "npm:^0.11.29"
     prettier: "npm:^3.3.1"
     typescript: "npm:^4.4.2"
     webpack: "npm:^5.61.0"
@@ -3968,15 +3968,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"libram@npm:^0.11.28":
-  version: 0.11.28
-  resolution: "libram@npm:0.11.28"
+"libram@npm:^0.11.29":
+  version: 0.11.29
+  resolution: "libram@npm:0.11.29"
   dependencies:
     core-js: "npm:^3.47.0"
     entities: "npm:^7.0.0"
   peerDependencies:
     kolmafia: ^5.28100.0
-  checksum: 10c0/f663824c28bce11958d206124fecd3f5cae6a6ca8e516820c2ffed7fe9623bd1552ca7ba7a5fd36b8a30039397e03e424d3b0768abf466b8f6c3ba6e99c60ccf
+  checksum: 10c0/3bc1317444c9b25ae2172739bab0493d4ed6fce32fe155f2841e6fd9f9b830d27196bace535f8bbad5f2498ba6a9eb6c8aec8c7775f1c05d4cf6fc339c1a23b4
   languageName: node
   linkType: hard
 
