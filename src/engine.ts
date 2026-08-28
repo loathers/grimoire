@@ -65,7 +65,7 @@ export abstract class ContextualEngine<
   T extends Task<A, Context> = Task<A, Context>,
 > {
   tasks: T[];
-  options: EngineOptions<A, T>;
+  options: EngineOptions<A, Context, T>;
   attempts: { [task_name: string]: number } = {};
   propertyManager = new PropertiesManager();
   tasks_by_name = new Map<string, T>();
@@ -76,7 +76,7 @@ export abstract class ContextualEngine<
    * @param tasks A list of tasks for looking up task dependencies.
    * @param options Basic configuration of the engine.
    */
-  constructor(tasks: T[], options?: EngineOptions<A, T>) {
+  constructor(tasks: T[], options?: EngineOptions<A, Context, T>) {
     this.options = options ?? {};
     this.tasks = tasks.map((task) => ({ ...this.options.default_task_options, ...task }));
     for (const task of this.tasks) {
