@@ -2510,10 +2510,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.16.4":
-  version: 3.16.4
-  resolution: "core-js@npm:3.16.4"
-  checksum: 10c0/275a490e6ddf45af3c4059a09086ad5ab3daf055a654ec0d6a54c9fb8d5b423aa6f7ecaaa6f4179b404e54e75e390f2560009a29dc9052301a8c20ba251226ba
+"core-js@npm:^3.47.0, core-js@npm:^3.50.0":
+  version: 3.50.0
+  resolution: "core-js@npm:3.50.0"
+  checksum: 10c0/1bfcfb1dbdf45b0b1428a9fdcb03697d1fc52c7e9bc336f804a86ff2c2705a301dca7d9d6636d09d49d60298183273b9321681baeaf330c78db5393bc73f3f6a
   languageName: node
   linkType: hard
 
@@ -2700,6 +2700,13 @@ __metadata:
     graceful-fs: "npm:^4.2.4"
     tapable: "npm:^2.2.0"
   checksum: 10c0/697c066552dadde9ea8ec7068677711dd5d6c49434b5ff96b2de2068a65060ffca32629abb899a86cca5fcb6b067d88119d1a69c7c2082e3a09c1165f760ad87
+  languageName: node
+  linkType: hard
+
+"entities@npm:^7.0.0":
+  version: 7.0.1
+  resolution: "entities@npm:7.0.1"
+  checksum: 10c0/b4fb9937bb47ecb00aaaceb9db9cdd1cc0b0fb649c0e843d05cf5dbbd2e9d2df8f98721d8b1b286445689c72af7b54a7242fc2d63ef7c9739037a8c73363e7ca
   languageName: node
   linkType: hard
 
@@ -3360,19 +3367,19 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^5.9.1"
     "@typescript-eslint/parser": "npm:^5.9.1"
     babel-loader: "npm:^8.2.2"
-    core-js: "npm:^3.16.4"
+    core-js: "npm:^3.50.0"
     eslint: "npm:^8.7.0"
     eslint-config-prettier: "npm:^8.3.0"
     eslint-plugin-libram: "npm:^0.4.22"
-    kolmafia: "npm:^5.28100.0"
-    libram: "npm:^0.10.0"
+    kolmafia: "npm:^5.29200.0"
+    libram: "npm:^0.11.29"
     prettier: "npm:^3.3.1"
     typescript: "npm:^4.4.2"
     webpack: "npm:^5.61.0"
     webpack-cli: "npm:^4.8.0"
   peerDependencies:
     kolmafia: ^5.28100.0
-    libram: ^0.10.0
+    libram: ^0.11.0
   languageName: unknown
   linkType: soft
 
@@ -3944,10 +3951,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kolmafia@npm:^5.28100.0":
-  version: 5.28360.0
-  resolution: "kolmafia@npm:5.28360.0"
-  checksum: 10c0/5bb5d276e56eb9d953dcb56c48fdf0369bb5f25e920817c4603fa2c8644b3bbf7adeb89ffaaf97390acb719c91c9a16a83552a12f655f8df85cdf39b4a9712ad
+"kolmafia@npm:^5.29200.0":
+  version: 5.29200.0
+  resolution: "kolmafia@npm:5.29200.0"
+  checksum: 10c0/507f2deb443c76f169af190a2df1259ad0e0f9592922cbbf24b3a220d1e71e3cbb0ca662b1a54b40144528bb41a7e3efc1df631b1a664fa6d8aa813d2d5027f2
   languageName: node
   linkType: hard
 
@@ -3961,14 +3968,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"libram@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "libram@npm:0.10.0"
+"libram@npm:^0.11.29":
+  version: 0.11.29
+  resolution: "libram@npm:0.11.29"
   dependencies:
-    html-entities: "npm:^2.5.2"
+    core-js: "npm:^3.47.0"
+    entities: "npm:^7.0.0"
   peerDependencies:
     kolmafia: ^5.28100.0
-  checksum: 10c0/618df4563770a2ee1d40d2885fe0a5b3acccfca270872c36dcb51a3afe0bd1d58db51592a63a39501f48134e1855066917b2230d4f853dd5e90471d473d7ff48
+  checksum: 10c0/3bc1317444c9b25ae2172739bab0493d4ed6fce32fe155f2841e6fd9f9b830d27196bace535f8bbad5f2498ba6a9eb6c8aec8c7775f1c05d4cf6fc339c1a23b4
   languageName: node
   linkType: hard
 
