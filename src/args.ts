@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Class,
-  ClassType,
   Effect,
   Familiar,
   getProperty,
@@ -278,7 +277,7 @@ export class Args {
     return this.custom(
       spec,
       (value: string) => {
-        const match = Class.get(value as ClassType);
+        const match = Class.get(value);
         // Class.get does fuzzy matching:
         //  e.g. Class.get("sc") returns disco bandit.
         // To avoid this foot-gun, only return exact matches or id lookups.

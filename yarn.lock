@@ -2510,14 +2510,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.16.4":
-  version: 3.16.4
-  resolution: "core-js@npm:3.16.4"
-  checksum: 10c0/275a490e6ddf45af3c4059a09086ad5ab3daf055a654ec0d6a54c9fb8d5b423aa6f7ecaaa6f4179b404e54e75e390f2560009a29dc9052301a8c20ba251226ba
-  languageName: node
-  linkType: hard
-
-"core-js@npm:^3.47.0":
+"core-js@npm:^3.47.0, core-js@npm:^3.50.0":
   version: 3.50.0
   resolution: "core-js@npm:3.50.0"
   checksum: 10c0/1bfcfb1dbdf45b0b1428a9fdcb03697d1fc52c7e9bc336f804a86ff2c2705a301dca7d9d6636d09d49d60298183273b9321681baeaf330c78db5393bc73f3f6a
@@ -3374,11 +3367,11 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^5.9.1"
     "@typescript-eslint/parser": "npm:^5.9.1"
     babel-loader: "npm:^8.2.2"
-    core-js: "npm:^3.16.4"
+    core-js: "npm:^3.50.0"
     eslint: "npm:^8.7.0"
     eslint-config-prettier: "npm:^8.3.0"
     eslint-plugin-libram: "npm:^0.4.22"
-    kolmafia: "npm:^5.28100.0"
+    kolmafia: "npm:^5.29200.0"
     libram: "npm:^0.11.28"
     prettier: "npm:^3.3.1"
     typescript: "npm:^4.4.2"
@@ -3958,10 +3951,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kolmafia@npm:^5.28100.0":
-  version: 5.28360.0
-  resolution: "kolmafia@npm:5.28360.0"
-  checksum: 10c0/5bb5d276e56eb9d953dcb56c48fdf0369bb5f25e920817c4603fa2c8644b3bbf7adeb89ffaaf97390acb719c91c9a16a83552a12f655f8df85cdf39b4a9712ad
+"kolmafia@npm:^5.29200.0":
+  version: 5.29200.0
+  resolution: "kolmafia@npm:5.29200.0"
+  checksum: 10c0/507f2deb443c76f169af190a2df1259ad0e0f9592922cbbf24b3a220d1e71e3cbb0ca662b1a54b40144528bb41a7e3efc1df631b1a664fa6d8aa813d2d5027f2
   languageName: node
   linkType: hard
 
