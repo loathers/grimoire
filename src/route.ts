@@ -16,11 +16,11 @@ import { Quest, Task } from "./task";
  *    have a dependency added on the previous task in the list.
  * @returns A list of tasks from the input quests (with updated properties).
  */
-export function getTasks<A extends string, Context = never, T extends Task<A, Context> = Task<A, Context>>(
-  quests: Quest<T, Context>[],
-  implicitAfter = false,
-  verifyTaskDependencies = true,
-): T[] {
+export function getTasks<
+  A extends string,
+  Context = never,
+  T extends Task<A, Context> = Task<A, Context>,
+>(quests: Quest<T, Context>[], implicitAfter = false, verifyTaskDependencies = true): T[] {
   const result: T[] = [];
   for (const quest of quests) {
     const questCompleted = quest.completed;
@@ -68,11 +68,11 @@ export function verifyDependencies<A extends string, Context = void>(tasks: Task
   return tasks;
 }
 
-export function orderByRoute<A extends string, Context = void, T extends Task<A, Context> = Task<A, Context>>(
-  tasks: T[],
-  routing: string[],
-  ignore_missing_tasks?: boolean,
-): T[] {
+export function orderByRoute<
+  A extends string,
+  Context = void,
+  T extends Task<A, Context> = Task<A, Context>,
+>(tasks: T[], routing: string[], ignore_missing_tasks?: boolean): T[] {
   const priorities = new Map<string, [number, T]>();
   for (const task of tasks) {
     priorities.set(task.name, [1000, task]);
