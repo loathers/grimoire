@@ -16,8 +16,8 @@ import { Quest, Task } from "./task";
  *    have a dependency added on the previous task in the list.
  * @returns A list of tasks from the input quests (with updated properties).
  */
-export function getTasks<A extends string, T extends Task<A> = Task<A>>(
-  quests: Quest<T>[],
+export function getTasks<A extends string, Context = never, T extends Task<A, Context> = Task<A, Context>>(
+  quests: Quest<T, Context>[],
   implicitAfter = false,
   verifyTaskDependencies = true,
 ): T[] {
@@ -38,13 +38,13 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
       // Include quest completion in task completion
       if (questCompleted !== undefined) {
         const taskCompleted = task.completed;
-        renamedTask.completed = () => questCompleted() || taskCompleted();
+        renamedTask.completed = (ctx) => questCompleted(ctx) || taskCompleted(ctx);
       }
       const taskReady = renamedTask.ready;
       if (questReady !== undefined && taskReady !== undefined) {
-        renamedTask.ready = () => questReady() && taskReady();
+        renamedTask.ready = (ctx) => questReady(ctx) && taskReady(ctx);
       } else if (questReady !== undefined) {
-        renamedTask.ready = () => questReady();
+        renamedTask.ready = (ctx) => questReady(ctx);
       }
       result.push(renamedTask);
     }
@@ -54,7 +54,7 @@ export function getTasks<A extends string, T extends Task<A> = Task<A>>(
   return result;
 }
 
-export function verifyDependencies<A extends string>(tasks: Task<A>[]) {
+export function verifyDependencies<A extends string, Context = void>(tasks: Task<A, Context>[]) {
   // Verify the dependency names of all tasks
   const names = new Set<string>();
   for (const task of tasks) names.add(task.name);
@@ -68,7 +68,7 @@ export function verifyDependencies<A extends string>(tasks: Task<A>[]) {
   return tasks;
 }
 
-export function orderByRoute<A extends string, T extends Task<A> = Task<A>>(
+export function orderByRoute<A extends string, Context = void, T extends Task<A, Context> = Task<A, Context>>(
   tasks: T[],
   routing: string[],
   ignore_missing_tasks?: boolean,
