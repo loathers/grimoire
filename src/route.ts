@@ -20,7 +20,7 @@ export function getTasks<
   A extends string,
   Context = never,
   T extends Task<A, Context> = Task<A, Context>,
->(quests: Quest<T, Context>[], implicitAfter = false, verifyTaskDependencies = true): T[] {
+>(quests: Quest<T>[], implicitAfter = false, verifyTaskDependencies = true): T[] {
   const result: T[] = [];
   for (const quest of quests) {
     const questCompleted = quest.completed;
