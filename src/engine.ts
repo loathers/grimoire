@@ -518,6 +518,8 @@ export const wanderingNCs = new Set<string>([
   "Teacher's Pet",
   // Lil' Doctor™ bag noncombat
   "A Pound of Cure",
+  // 11 Things I H8 About U
+  "Eye-Eye-Eye!",
 ]);
 
 export const environmentSpecificNCs = new Map<string, EnvironmentType>([
