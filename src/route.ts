@@ -17,9 +17,8 @@ import { Quest, Task } from "./task";
  * @returns A list of tasks from the input quests (with updated properties).
  */
 export function getTasks<
-  A extends string,
-  Context = never,
-  T extends Task<A, Context> = Task<A, Context>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  T extends Task<any, any> = Task,
 >(quests: Quest<T>[], implicitAfter = false, verifyTaskDependencies = true): T[] {
   const result: T[] = [];
   for (const quest of quests) {
