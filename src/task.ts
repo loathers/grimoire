@@ -8,8 +8,8 @@ import { Outfit, OutfitSpec } from "./outfit";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Quest<T extends Task<any, any> = Task> = {
   name: string;
-  completed?: T['completed'];
-  ready?: T['ready'];
+  completed?: T["completed"];
+  ready?: T["ready"];
   tasks: T[];
 };
 
