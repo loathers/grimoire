@@ -5,10 +5,11 @@ import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
 import { Outfit, OutfitSpec } from "./outfit";
 
-export type Quest<T, Context = void> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Quest<T extends Task<any, any> = Task> = {
   name: string;
-  completed?: (ctx: Context) => boolean;
-  ready?: (ctx: Context) => boolean;
+  completed?: T['completed'];
+  ready?: T['ready'];
   tasks: T[];
 };
 
