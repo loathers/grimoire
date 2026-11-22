@@ -733,6 +733,13 @@ export class Outfit {
     if (this.modifier.length > 0 || [...this.bonuses].filter(([, value]) => value).length > 0) {
       const allRequirements = [
         new Requirement(this.modifier, {
+          forceEquip: [...this.equips]
+            .filter(
+              ([slot, item]) =>
+                item !== $item.none &&
+                (slot !== $slot`familiar` || $slots`familiar, off-hand`.includes(toSlot(item))),
+            )
+            .map(([, item]) => item),
           preventSlot: [...usedSlots],
           preventEquip: this.avoid,
           modes: modes,
