@@ -5,11 +5,15 @@ import { CombatStrategy } from "./combat";
 import { Limit } from "./limit";
 import { Outfit, OutfitSpec } from "./outfit";
 
+type QuestContext<T> = [T] extends [Pick<Task<never, infer Context>, "ready" | "completed">]
+  ? Context
+  : never;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Quest<T extends Task<any, any> = Task> = {
+export type Quest<T extends Pick<Task<any, any>, "ready" | "completed"> = Task> = {
   name: string;
-  completed?: T["completed"];
-  ready?: T["ready"];
+  completed?: (ctx: QuestContext<T>) => boolean;
+  ready?: (ctx: QuestContext<T>) => boolean;
   tasks: T[];
 };
 
@@ -60,14 +64,16 @@ export type StrictCombatTask<
   Context = void,
   C extends CombatStrategy<A, Context> = CombatStrategy<A, Context>,
   O extends OutfitSpec | Outfit = OutfitSpec | Outfit,
+  CombatExtra = unknown,
+  NonCombatExtra = unknown,
 > = Omit<Task<A, Context>, "do" | "combat" | "outfit"> &
   (
-    | {
+    | ({
         do: Delayed<Location, [Context]> | ((context: Context) => void);
         combat: C;
         outfit: Delayed<O, [Context]>;
-      }
-    | { do: () => void; outfit?: Delayed<O, [Context]> }
+      } & CombatExtra)
+    | ({ do: () => void; outfit?: Delayed<O, [Context]>; combat?: never } & NonCombatExtra)
   );
 
 /**

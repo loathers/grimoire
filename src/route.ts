@@ -18,7 +18,7 @@ import { Quest, Task } from "./task";
  */
 export function getTasks<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends Task<any, any> = Task,
+  T extends Pick<Task<any, any>, "name" | "after" | "ready" | "completed"> = Task,
 >(quests: Quest<T>[], implicitAfter = false, verifyTaskDependencies = true): T[] {
   const result: T[] = [];
   for (const quest of quests) {
@@ -53,8 +53,7 @@ export function getTasks<
   return result;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function verifyDependencies<T extends Task<any, any> = Task>(tasks: T[]) {
+export function verifyDependencies<T extends Pick<Task, "name" | "after"> = Task>(tasks: T[]) {
   // Verify the dependency names of all tasks
   const names = new Set<string>();
   for (const task of tasks) names.add(task.name);
@@ -68,8 +67,7 @@ export function verifyDependencies<T extends Task<any, any> = Task>(tasks: T[]) 
   return tasks;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function orderByRoute<T extends Task<any, any> = Task>(
+export function orderByRoute<T extends Pick<Task, "name" | "after"> = Task>(
   tasks: T[],
   routing: string[],
   ignore_missing_tasks?: boolean,
